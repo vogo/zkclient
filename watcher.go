@@ -15,7 +15,7 @@ import (
 // EventHandler zookeeper event handler
 type EventHandler func(*Client, *zk.Event) (<-chan zk.Event, error)
 
-// EventCallback define
+// EventCallback event callback
 type EventCallback func() error
 
 // Watcher zookeeper watcher
@@ -25,7 +25,7 @@ type Watcher struct {
 	handler EventHandler
 }
 
-// NewWatcher instance
+// NewWatcher create new watcher
 func (cli *Client) NewWatcher(path string, handler EventHandler) (*Watcher, error) {
 	if handler == nil {
 		return nil, errors.New("nil handler")
@@ -33,7 +33,7 @@ func (cli *Client) NewWatcher(path string, handler EventHandler) (*Watcher, erro
 	return &Watcher{Path: path, client: cli, handler: handler}, nil
 }
 
-// Watch watch event
+// Watch start watch event
 func (w *Watcher) Watch() {
 	go func() {
 		logger.Debugf("start zk watcher: %s", w.Path)

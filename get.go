@@ -9,7 +9,7 @@ import (
 	"reflect"
 )
 
-// Get value from zookeeper
+// Get value from zookeeper, the raw value will be decoded by codec
 func (cli *Client) Get(path string, codec Codec, typ reflect.Type) (interface{}, error) {
 	data, _, err := cli.Conn().Get(path)
 	if err != nil {

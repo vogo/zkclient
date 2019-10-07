@@ -12,7 +12,7 @@ import (
 	"github.com/vogo/logger"
 )
 
-// Sync config
+// Sync synchronize value of the path to obj
 func (cli *Client) Sync(path string, obj interface{}, codec Codec) error {
 	valuePack, err := Pack(obj, codec)
 	if err != nil {
@@ -23,7 +23,7 @@ func (cli *Client) Sync(path string, obj interface{}, codec Codec) error {
 		data, _, wch, zkErr := client.Conn().GetW(path)
 		if zkErr != nil {
 			if zkErr == zk.ErrNoNode {
-				zkErr = client.SetValuePack(path, valuePack)
+				zkErr = client.SetPackValue(path, valuePack)
 				if zkErr != nil {
 					return nil, zkErr
 				}

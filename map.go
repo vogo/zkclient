@@ -12,7 +12,7 @@ import (
 	"github.com/vogo/logger"
 )
 
-// loadMapChild init
+// loadMapChild load map child value into packMap, and return the event chan for waiting the next event
 func (cli *Client) loadMapChild(packMap *PackMap, path, child string, syncChildChange bool) (<-chan zk.Event, error) {
 	var data []byte
 	var err error
@@ -44,7 +44,7 @@ func (cli *Client) loadMapChild(packMap *PackMap, path, child string, syncChildC
 	return ch, nil
 }
 
-// SyncMap config
+// SyncMap synchronize sub-path value into a map
 // syncChildChange : whether sync the change event of the data of children
 func (cli *Client) SyncMap(path string, m interface{}, valueCodec Codec, callback EventCallback, syncChildChange bool) error {
 	packMap, err := MapPack(m, valueCodec)
