@@ -14,7 +14,7 @@ import (
 type PackValue struct {
 	value reflect.Value
 	typ   reflect.Type
-	codec ZKCodec
+	codec Codec
 }
 
 func PackString(s *string) *PackValue {
@@ -25,7 +25,7 @@ func PackString(s *string) *PackValue {
 	}
 }
 
-func Pack(obj interface{}, codec ZKCodec) (*PackValue, error) {
+func Pack(obj interface{}, codec Codec) (*PackValue, error) {
 	typ := reflect.TypeOf(obj)
 	if typ.Kind() != reflect.Ptr {
 		return nil, errors.New("pointer object required")
@@ -59,12 +59,12 @@ func (p *PackValue) Set(data []byte) error {
 type PackMap struct {
 	value    reflect.Value
 	typ      reflect.Type
-	codec    ZKCodec
+	codec    Codec
 	lock     sync.Mutex
 	children map[string]struct{}
 }
 
-func MapPack(obj interface{}, codec ZKCodec) (*PackMap, error) {
+func MapPack(obj interface{}, codec Codec) (*PackMap, error) {
 	typ := reflect.TypeOf(obj)
 	if typ.Kind() != reflect.Map {
 		return nil, errors.New("map object required")

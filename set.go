@@ -7,7 +7,7 @@ package zkclient
 import "github.com/vogo/logger"
 
 // SetValue in zookeeper
-func (cli *Client) SetValue(path string, obj interface{}, codec ZKCodec) error {
+func (cli *Client) SetValue(path string, obj interface{}, codec Codec) error {
 	bytes, err := codec.Encode(obj)
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (cli *Client) SetRawValue(path string, bytes []byte) error {
 }
 
 // SetMapValue in zookeeper
-func (cli *Client) SetMapValue(path, key string, obj interface{}, codec ZKCodec) error {
+func (cli *Client) SetMapValue(path, key string, obj interface{}, codec Codec) error {
 	childPath := path + "/" + key
 	bytes, err := codec.Encode(obj)
 	if err != nil {

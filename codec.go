@@ -8,8 +8,8 @@ import (
 	"reflect"
 )
 
-// ZKCodec for data
-type ZKCodec interface {
+// Codec for data
+type Codec interface {
 	Encode(obj interface{}) ([]byte, error)
 	Decode(data []byte, typ reflect.Type) (reflect.Value, error)
 }

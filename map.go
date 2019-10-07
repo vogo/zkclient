@@ -45,7 +45,7 @@ func (cli *Client) loadMapChild(packMap *PackMap, path, child string, syncChildC
 
 // SyncMap config
 // syncChildChange : whether sync the change event of the data of children
-func (cli *Client) SyncMap(path string, m interface{}, valueCodec ZKCodec, callback EventCallback, syncChildChange bool) error {
+func (cli *Client) SyncMap(path string, m interface{}, valueCodec Codec, callback EventCallback, syncChildChange bool) error {
 	packMap, err := MapPack(m, valueCodec)
 	if err != nil {
 		return err

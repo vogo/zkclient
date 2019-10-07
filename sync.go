@@ -12,7 +12,7 @@ import (
 )
 
 // Sync config
-func (cli *Client) Sync(path string, obj interface{}, codec ZKCodec) error {
+func (cli *Client) Sync(path string, obj interface{}, codec Codec) error {
 	valuePack, err := Pack(obj, codec)
 	if err != nil {
 		return err

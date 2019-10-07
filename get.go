@@ -9,7 +9,7 @@ import (
 )
 
 // Get value from zookeeper
-func (cli *Client) Get(path string, codec ZKCodec, typ reflect.Type) (interface{}, error) {
+func (cli *Client) Get(path string, codec Codec, typ reflect.Type) (interface{}, error) {
 	data, _, err := cli.Conn().Get(path)
 	if err != nil {
 		return nil, err
