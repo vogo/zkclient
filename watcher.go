@@ -36,6 +36,7 @@ func (cli *Client) NewWatcher(path string, handler EventHandler) (*Watcher, erro
 	if handler == nil {
 		return nil, errors.New("nil listener")
 	}
+
 	return &Watcher{
 		client:  cli,
 		handler: handler,

@@ -42,6 +42,7 @@ func NewClient(servers []string, timeout time.Duration) (*Client, error) {
 		if err != nil && client.alarmTrigger != nil {
 			client.alarmTrigger(err)
 		}
+
 		return conn, err
 	}
 
@@ -83,6 +84,7 @@ func (cli *Client) collectDeadWatchers() []*Watcher {
 
 	watchers := cli.deadWatchers
 	cli.deadWatchers = []*Watcher{}
+
 	return watchers
 }
 
@@ -151,6 +153,7 @@ func (cli *Client) EnsurePath(path string) error {
 	if err != nil {
 		return err
 	}
+
 	if !exists {
 		_, err := cli.conn.Create(path, []byte(""), 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
@@ -169,6 +172,7 @@ func (cli *Client) EnsurePath(path string) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -177,5 +181,6 @@ func (cli *Client) Delete(path string) error {
 	if err := cli.conn.Delete(path, -1); err != nil && err != zk.ErrNoNode {
 		return err
 	}
+
 	return nil
 }

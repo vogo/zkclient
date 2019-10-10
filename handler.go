@@ -35,12 +35,15 @@ func NewValueHandler(obj interface{}, codec Codec, listener ValueListener) (*Val
 	if typ.Kind() != reflect.Ptr {
 		return nil, errors.New("pointer object required")
 	}
+
 	if typ.Elem().Kind() == reflect.Ptr {
 		return nil, errors.New("not support multiple level pointer object")
 	}
+
 	if codec == nil {
 		return nil, errors.New("codec required")
 	}
+
 	return &ValueHandler{
 		value:    reflect.ValueOf(obj),
 		typ:      typ,
@@ -58,6 +61,7 @@ func (h *ValueHandler) Decode(data []byte) error {
 	if err != nil {
 		return err
 	}
+
 	h.value.Elem().Set(v.Elem())
 
 	if h.listener != nil {
@@ -65,6 +69,7 @@ func (h *ValueHandler) Decode(data []byte) error {
 			h.listener(h.value.Interface())
 		}()
 	}
+
 	return nil
 }
 
@@ -74,6 +79,7 @@ func (h *ValueHandler) SetTo(cli *Client, path string) error {
 	if err != nil {
 		return err
 	}
+
 	return cli.SetRawValue(path, bytes)
 }
 
@@ -85,10 +91,11 @@ func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 			if zkErr != nil {
 				return nil, zkErr
 			}
-			zkErr = w.client.SetRawValue(w.Path, data)
-			if zkErr != nil {
-				return nil, zkErr
+
+			if err := w.client.SetRawValue(w.Path, data); err != nil {
+				return nil, err
 			}
+
 			data, _, wch, zkErr = w.client.Conn().GetW(w.Path)
 		}
 
@@ -107,7 +114,9 @@ func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 		if zkErr == io.EOF {
 			return wch, nil // ignore nil data
 		}
+
 		logger.Warnf("failed to parse %s: %v", w.Path, zkErr)
+
 		return wch, nil
 	}
 

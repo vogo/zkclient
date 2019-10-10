@@ -13,20 +13,22 @@ func (cli *Client) SetValue(path string, obj interface{}, codec Codec) error {
 	if err != nil {
 		return err
 	}
+
 	return cli.SetRawValue(path, bytes)
 }
 
 // SetRawValue set raw value in zookeeper
 func (cli *Client) SetRawValue(path string, bytes []byte) error {
 	logger.Debugf("set zk value: [%s] %s", path, string(bytes))
-	err := cli.EnsurePath(path)
-	if err != nil {
+
+	if err := cli.EnsurePath(path); err != nil {
 		return err
 	}
-	_, err = cli.Conn().Set(path, bytes, -1)
-	if err != nil {
+
+	if _, err := cli.Conn().Set(path, bytes, -1); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -44,9 +46,11 @@ func (cli *Client) SetJSON(path string, obj interface{}) error {
 func (cli *Client) SetMapValue(path, key string, obj interface{}, codec Codec) error {
 	childPath := path + "/" + key
 	bytes, err := codec.Encode(obj)
+
 	if err != nil {
 		return err
 	}
+
 	return cli.SetRawValue(childPath, bytes)
 }
 

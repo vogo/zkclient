@@ -14,6 +14,7 @@ func (c *StringCodec) Encode(obj interface{}) ([]byte, error) {
 	if s, ok := obj.(string); ok {
 		return []byte(s), nil
 	}
+
 	return nil, errInvalidValue
 }
 

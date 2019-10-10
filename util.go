@@ -13,6 +13,7 @@ func StateAlive(state zk.State) bool {
 	case zk.StateDisconnected, zk.StateAuthFailed, zk.StateConnecting:
 		return false
 	}
+
 	return true
 }
 

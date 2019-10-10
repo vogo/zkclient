@@ -37,9 +37,11 @@ func NewMapHandler(obj interface{}, syncChild bool, codec Codec, h ChildListener
 	}
 
 	valueTyp := typ.Elem()
+
 	if valueTyp.Kind() != reflect.Ptr {
 		return nil, errors.New("pointer value required")
 	}
+
 	if valueTyp.Elem().Kind() == reflect.Ptr {
 		return nil, errors.New("not support multiple level pointer value")
 	}
@@ -47,6 +49,7 @@ func NewMapHandler(obj interface{}, syncChild bool, codec Codec, h ChildListener
 	if codec == nil {
 		return nil, errors.New("codec required")
 	}
+
 	return &MapHandler{
 		value:     reflect.ValueOf(obj),
 		typ:       valueTyp,
@@ -63,6 +66,7 @@ func (h *MapHandler) Encode(key string) ([]byte, error) {
 	if v.IsNil() {
 		return nil, io.EOF
 	}
+
 	return h.codec.Encode(v.Interface())
 }
 
@@ -74,6 +78,7 @@ func (h *MapHandler) Decode(key string, data []byte) error {
 	if err != nil {
 		return err
 	}
+
 	h.value.SetMapIndex(reflect.ValueOf(key), v)
 
 	if h.listener != nil {
@@ -105,6 +110,7 @@ func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) 
 			_ = w.client.EnsurePath(w.Path)
 			children, _, wch, err = w.client.Conn().ChildrenW(w.Path)
 		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -112,8 +118,10 @@ func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) 
 
 	newChildren := make(map[string]struct{})
 	oldChildren := h.children
+
 	for _, child := range children {
 		newChildren[child] = nilStruct
+
 		if _, ok := oldChildren[child]; !ok {
 			h.syncWatchChild(w, child)
 		}
@@ -145,10 +153,10 @@ func (ch *childHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, erro
 
 func (h *MapHandler) syncWatchChild(w *Watcher, child string) {
 	if !h.syncChild {
-		_, err := h.handleChild(w.client, w.Path+"/"+child)
-		if err != nil {
+		if _, err := h.handleChild(w.client, w.Path+"/"+child); err != nil {
 			logger.Errorf("load zk map child error: %v", err)
 		}
+
 		return
 	}
 
@@ -158,11 +166,14 @@ func (h *MapHandler) syncWatchChild(w *Watcher, child string) {
 
 // handleChild load map child value into packMap, and return the event chan for waiting the next event
 func (h *MapHandler) handleChild(client *Client, childPath string) (<-chan zk.Event, error) {
-	var data []byte
-	var err error
-	var ch <-chan zk.Event
+	var (
+		data []byte
+		err  error
+		ch   <-chan zk.Event
+	)
 
 	logger.Debugf("read path --> %s", childPath)
+
 	if h.syncChild {
 		data, _, ch, err = client.Conn().GetW(childPath)
 		if err != nil {
@@ -181,6 +192,7 @@ func (h *MapHandler) handleChild(client *Client, childPath string) (<-chan zk.Ev
 		if err != io.EOF {
 			logger.Warnf("failed to parse %s: %v", childPath, err)
 		}
+
 		return ch, nil
 	}
 

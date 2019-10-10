@@ -55,7 +55,9 @@ func (cli *Client) SyncWatchMap(path string, m interface{}, valueCodec Codec, sy
 	if err != nil {
 		return err
 	}
+
 	watcher.Watch()
+
 	return nil
 }
 

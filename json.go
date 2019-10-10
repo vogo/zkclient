@@ -22,6 +22,7 @@ func (c *JSONCodec) Encode(obj interface{}) ([]byte, error) {
 // Decode zk json decode
 func (c *JSONCodec) Decode(data []byte, typ reflect.Type) (reflect.Value, error) {
 	value := reflect.New(typ)
+
 	if len(data) == 0 {
 		return value.Elem(), io.EOF
 	}

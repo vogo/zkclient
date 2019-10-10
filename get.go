@@ -21,6 +21,7 @@ func (cli *Client) Get(path string, codec Codec, typ reflect.Type) (interface{},
 	if err != nil {
 		return nil, err
 	}
+
 	return v.Interface(), nil
 }
 
