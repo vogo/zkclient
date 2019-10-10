@@ -36,13 +36,3 @@ func (c *JSONCodec) Decode(data []byte, typ reflect.Type) (reflect.Value, error)
 }
 
 var jsonCodec = &JSONCodec{}
-
-// SetJSON in zookeeper
-func (cli *Client) SetJSON(path string, obj interface{}) error {
-	return cli.SetValue(path, obj, jsonCodec)
-}
-
-// SetJSONMapValue in zookeeper
-func (cli *Client) SetJSONMapValue(path, key string, obj interface{}) error {
-	return cli.SetMapValue(path, key, obj, jsonCodec)
-}

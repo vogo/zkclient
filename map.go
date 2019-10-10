@@ -8,7 +8,6 @@ package zkclient
 import (
 	"errors"
 	"io"
-	"path/filepath"
 	"reflect"
 	"sync"
 
@@ -115,7 +114,7 @@ func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) 
 	for _, child := range children {
 		newChildren[child] = nilStruct
 		if _, ok := oldChildren[child]; !ok {
-			h.syncMapChild(w, w.Path+"/"+child)
+			h.syncMapChild(w, child)
 		}
 	}
 
@@ -143,24 +142,26 @@ func (ch *childHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, erro
 	return ch.mapHandler.loadMapChild(w, w.Path)
 }
 
-func (h *MapHandler) syncMapChild(w *Watcher, childPath string) {
+func (h *MapHandler) syncMapChild(w *Watcher, child string) {
 	if !h.syncChild {
-		_, err := h.loadMapChild(w, childPath)
+		_, err := h.loadMapChild(w, child)
 		if err != nil {
 			logger.Errorf("load zk map child error: %v", err)
 		}
 		return
 	}
 
-	childWatcher := w.newChildWatcher(childPath, &childHandler{h})
+	childWatcher := w.newChildWatcher(child, &childHandler{h})
 	childWatcher.Watch()
 }
 
 // loadMapChild load map child value into packMap, and return the event chan for waiting the next event
-func (h *MapHandler) loadMapChild(w *Watcher, childPath string) (<-chan zk.Event, error) {
+func (h *MapHandler) loadMapChild(w *Watcher, child string) (<-chan zk.Event, error) {
 	var data []byte
 	var err error
 	var ch <-chan zk.Event
+
+	childPath := w.Path + "/" + child
 
 	logger.Debugf("read path --> %s", childPath)
 	if h.syncChild {
@@ -175,7 +176,6 @@ func (h *MapHandler) loadMapChild(w *Watcher, childPath string) (<-chan zk.Event
 		}
 	}
 
-	child := filepath.Base(childPath)
 	err = h.Set(child, data)
 
 	if err != nil {

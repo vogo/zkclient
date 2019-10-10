@@ -25,13 +25,3 @@ func (c *StringCodec) Decode(data []byte, typ reflect.Type) (reflect.Value, erro
 var (
 	stringCodec = &StringCodec{}
 )
-
-// SetString in zookeeper
-func (cli *Client) SetString(path, s string) error {
-	return cli.SetRawValue(path, []byte(s))
-}
-
-// SetStringMapValue in zookeeper
-func (cli *Client) SetStringMapValue(path, key, s string) error {
-	return cli.SetRawValue(path+"/"+key, []byte(s))
-}

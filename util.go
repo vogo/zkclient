@@ -15,3 +15,21 @@ func StateAlive(state zk.State) bool {
 	}
 	return true
 }
+
+func IsZKInvalidErr(err error) bool {
+	switch err {
+	case zk.ErrInvalidACL, zk.ErrInvalidPath:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsZKRecoverableErr(err error) bool {
+	switch err {
+	case zk.ErrClosing, zk.ErrConnectionClosed, zk.ErrSessionExpired, zk.ErrSessionMoved:
+		return true
+	default:
+		return false
+	}
+}

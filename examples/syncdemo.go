@@ -16,12 +16,12 @@ func main() {
 		logger.Fatalf("failed to connect zookeeper: %v", err)
 	}
 
-	if err := syncString(client); err != nil {
-		logger.Fatal(err)
-	}
-	if err := syncJson(client); err != nil {
-		logger.Fatal(err)
-	}
+	//if err := syncString(client); err != nil {
+	//	logger.Fatal(err)
+	//}
+	//if err := syncJson(client); err != nil {
+	//	logger.Fatal(err)
+	//}
 	if err := syncMap(client); err != nil {
 		logger.Fatal(err)
 	}
@@ -99,25 +99,25 @@ func syncJson(client *zkclient.Client) error {
 func syncMap(client *zkclient.Client) error {
 	path := "/test/users"
 	users := make(map[string]*user)
-	if err := client.SyncWatchMapJSON(path, users, true, nil); err != nil {
+	if err := client.SyncWatchJSONMap(path, users, true, nil); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)
 	logger.Infof("users after sync: %v", users)
 
-	if err := client.SetJSONMapValue(path, "u1", &user{Name: "wongoo", Sex: 1}); err != nil {
+	if err := client.SetMapJSONValue(path, "u1", &user{Name: "wongoo", Sex: 1}); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)
 	logger.Infof("users after set u1: %v", users)
 
-	if err := client.SetJSONMapValue(path, "u1", &user{Name: "yang", Sex: 1}); err != nil {
+	if err := client.SetMapJSONValue(path, "u1", &user{Name: "yang", Sex: 1}); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)
 	logger.Infof("users after change u1: %v", users)
 
-	if err := client.SetJSONMapValue(path, "u2", &user{Name: "jack", Sex: 0}); err != nil {
+	if err := client.SetMapJSONValue(path, "u2", &user{Name: "jack", Sex: 0}); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)

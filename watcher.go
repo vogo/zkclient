@@ -17,8 +17,8 @@ type EventHandler interface {
 	Handle(*Watcher, *zk.Event) (<-chan zk.Event, error)
 }
 
-// WatchListener node watch listener
-type WatchListener func(interface{})
+// ValueListener node watch listener
+type ValueListener func(interface{})
 
 // ChildListener child watch listener
 type ChildListener func(child string, obj interface{})
@@ -60,21 +60,25 @@ func (w *Watcher) Watch() {
 			case <-w.close:
 				return
 			default:
+				if evt != nil && evt.Type == zk.EventNodeDeleted {
+					// return nil chan to exit watcher
+					break
+				}
+
 				ch, err = w.handler.Handle(w, evt)
 				if err != nil {
 					logger.Errorf("zk watcher handle error %s: %v", w.Path, err)
-					w.client.AppendDeadWatcher(w)
-					break // exit watching
+
+					//if IsZKRecoverableErr(err) {
+					//	w.client.AppendDeadWatcher(w)
+					//}
+
+					return // exit watching
 				}
 
 				if ch == nil {
 					// return nil chan to exit watcher
-					break
-				}
-
-				if evt != nil && evt.Type == zk.EventNodeDeleted {
-					// return nil chan to exit watcher
-					break
+					return
 				}
 
 				event := <-ch
@@ -83,18 +87,18 @@ func (w *Watcher) Watch() {
 
 				if !StateAlive(evt.State) {
 					w.client.AppendDeadWatcher(w)
-					break // exit watching
+					return // exit watching
 				}
 			}
 		}
 	}()
 }
 
-func (w *Watcher) newChildWatcher(path string, handler EventHandler) *Watcher {
+func (w *Watcher) newChildWatcher(child string, handler EventHandler) *Watcher {
 	return &Watcher{
 		client:  w.client,
 		handler: handler,
 		close:   w.close,
-		Path:    path,
+		Path:    w.Path + "/" + child,
 	}
 }

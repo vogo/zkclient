@@ -16,18 +16,9 @@ func (cli *Client) SetValue(path string, obj interface{}, codec Codec) error {
 	return cli.SetRawValue(path, bytes)
 }
 
-// SetPackValue set pack value in zookeeper
-func (cli *Client) SetPackValue(path string, pack *ValueHandler) error {
-	bytes, err := pack.Get()
-	if err != nil {
-		return err
-	}
-	return cli.SetRawValue(path, bytes)
-}
-
 // SetRawValue set raw value in zookeeper
 func (cli *Client) SetRawValue(path string, bytes []byte) error {
-	logger.Infof("set zk value: [%s] %s", path, string(bytes))
+	logger.Debugf("set zk value: [%s] %s", path, string(bytes))
 	err := cli.EnsurePath(path)
 	if err != nil {
 		return err
@@ -39,6 +30,16 @@ func (cli *Client) SetRawValue(path string, bytes []byte) error {
 	return nil
 }
 
+// SetString in zookeeper
+func (cli *Client) SetString(path, s string) error {
+	return cli.SetRawValue(path, []byte(s))
+}
+
+// SetJSON in zookeeper
+func (cli *Client) SetJSON(path string, obj interface{}) error {
+	return cli.SetValue(path, obj, jsonCodec)
+}
+
 // SetMapValue set map value in zookeeper
 func (cli *Client) SetMapValue(path, key string, obj interface{}, codec Codec) error {
 	childPath := path + "/" + key
@@ -47,4 +48,14 @@ func (cli *Client) SetMapValue(path, key string, obj interface{}, codec Codec) e
 		return err
 	}
 	return cli.SetRawValue(childPath, bytes)
+}
+
+// SetMapStringValue in zookeeper
+func (cli *Client) SetMapStringValue(path, key, s string) error {
+	return cli.SetRawValue(path+"/"+key, []byte(s))
+}
+
+// SetMapJSONValue in zookeeper
+func (cli *Client) SetMapJSONValue(path, key string, obj interface{}) error {
+	return cli.SetMapValue(path, key, obj, jsonCodec)
 }

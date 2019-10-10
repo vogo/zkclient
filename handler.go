@@ -18,10 +18,10 @@ type ValueHandler struct {
 	value    reflect.Value
 	typ      reflect.Type
 	codec    Codec
-	listener WatchListener
+	listener ValueListener
 }
 
-func StringValueHandler(s *string, listener WatchListener) *ValueHandler {
+func StringValueHandler(s *string, listener ValueListener) *ValueHandler {
 	return &ValueHandler{
 		value:    reflect.ValueOf(s),
 		typ:      reflect.TypeOf(s),
@@ -30,7 +30,7 @@ func StringValueHandler(s *string, listener WatchListener) *ValueHandler {
 	}
 }
 
-func NewValueHandler(obj interface{}, codec Codec, listener WatchListener) (*ValueHandler, error) {
+func NewValueHandler(obj interface{}, codec Codec, listener ValueListener) (*ValueHandler, error) {
 	typ := reflect.TypeOf(obj)
 	if typ.Kind() != reflect.Ptr {
 		return nil, errors.New("pointer object required")
@@ -49,30 +49,39 @@ func NewValueHandler(obj interface{}, codec Codec, listener WatchListener) (*Val
 	}, nil
 }
 
-func (p *ValueHandler) Get() ([]byte, error) {
-	return p.codec.Encode(p.value.Interface())
+func (h *ValueHandler) Encode() ([]byte, error) {
+	return h.codec.Encode(h.value.Interface())
 }
 
-func (p *ValueHandler) Set(data []byte) error {
-	v, err := p.codec.Decode(data, p.typ)
+func (h *ValueHandler) Decode(data []byte) error {
+	v, err := h.codec.Decode(data, h.typ)
 	if err != nil {
 		return err
 	}
-	p.value.Elem().Set(v.Elem())
+	h.value.Elem().Set(v.Elem())
 
-	if p.listener != nil {
+	if h.listener != nil {
 		go func() {
-			p.listener(p.value.Interface())
+			h.listener(h.value.Interface())
 		}()
 	}
 	return nil
 }
 
-func (p *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
+// SetTo set value in zookeeper
+func (h *ValueHandler) SetTo(cli *Client, path string) error {
+	bytes, err := h.Encode()
+	if err != nil {
+		return err
+	}
+	return cli.SetRawValue(path, bytes)
+}
+
+func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
 	data, _, wch, zkErr := w.client.Conn().GetW(w.Path)
 	if zkErr != nil {
 		if zkErr == zk.ErrNoNode {
-			data, zkErr = p.Get()
+			data, zkErr = h.Encode()
 			if zkErr != nil {
 				return nil, zkErr
 			}
@@ -93,7 +102,7 @@ func (p *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 		return wch, nil
 	}
 
-	zkErr = p.Set(data)
+	zkErr = h.Decode(data)
 	if zkErr != nil {
 		if zkErr == io.EOF {
 			return wch, nil // ignore nil data
