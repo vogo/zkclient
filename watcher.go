@@ -12,25 +12,36 @@ import (
 	"github.com/vogo/logger"
 )
 
-// EventHandler zookeeper event handler
-type EventHandler func(*Client, *zk.Event) (<-chan zk.Event, error)
+// EventHandler zookeeper event listener
+type EventHandler interface {
+	Handle(*Watcher, *zk.Event) (<-chan zk.Event, error)
+}
 
-// EventCallback event callback
-type EventCallback func() error
+// WatchListener node watch listener
+type WatchListener func(interface{})
+
+// ChildListener child watch listener
+type ChildListener func(child string, obj interface{})
 
 // Watcher zookeeper watcher
 type Watcher struct {
-	Path    string
 	client  *Client
 	handler EventHandler
+	close   chan struct{}
+	Path    string
 }
 
 // NewWatcher create new watcher
 func (cli *Client) NewWatcher(path string, handler EventHandler) (*Watcher, error) {
 	if handler == nil {
-		return nil, errors.New("nil handler")
+		return nil, errors.New("nil listener")
 	}
-	return &Watcher{Path: path, client: cli, handler: handler}, nil
+	return &Watcher{
+		client:  cli,
+		handler: handler,
+		close:   make(chan struct{}),
+		Path:    path,
+	}, nil
 }
 
 // Watch start watch event
@@ -46,8 +57,10 @@ func (w *Watcher) Watch() {
 			select {
 			case <-w.client.close:
 				return
+			case <-w.close:
+				return
 			default:
-				ch, err = w.handler(w.client, evt)
+				ch, err = w.handler.Handle(w, evt)
 				if err != nil {
 					logger.Errorf("zk watcher handle error %s: %v", w.Path, err)
 					w.client.AppendDeadWatcher(w)
@@ -55,6 +68,11 @@ func (w *Watcher) Watch() {
 				}
 
 				if ch == nil {
+					// return nil chan to exit watcher
+					break
+				}
+
+				if evt != nil && evt.Type == zk.EventNodeDeleted {
 					// return nil chan to exit watcher
 					break
 				}
@@ -70,4 +88,13 @@ func (w *Watcher) Watch() {
 			}
 		}
 	}()
+}
+
+func (w *Watcher) newChildWatcher(path string, handler EventHandler) *Watcher {
+	return &Watcher{
+		client:  w.client,
+		handler: handler,
+		close:   w.close,
+		Path:    path,
+	}
 }

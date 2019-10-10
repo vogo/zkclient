@@ -17,7 +17,7 @@ func (cli *Client) SetValue(path string, obj interface{}, codec Codec) error {
 }
 
 // SetPackValue set pack value in zookeeper
-func (cli *Client) SetPackValue(path string, pack *PackValue) error {
+func (cli *Client) SetPackValue(path string, pack *ValueHandler) error {
 	bytes, err := pack.Get()
 	if err != nil {
 		return err

@@ -31,17 +31,7 @@ func (cli *Client) SetString(path, s string) error {
 	return cli.SetRawValue(path, []byte(s))
 }
 
-// SyncString config
-func (cli *Client) SyncString(path, s string) error {
-	return cli.Sync(path, s, stringCodec)
-}
-
 // SetStringMapValue in zookeeper
 func (cli *Client) SetStringMapValue(path, key, s string) error {
 	return cli.SetRawValue(path+"/"+key, []byte(s))
-}
-
-// SyncStringMap config
-func (cli *Client) SyncStringMap(path string, m map[string]string) error {
-	return cli.SyncMap(path, m, stringCodec, nil, true)
 }

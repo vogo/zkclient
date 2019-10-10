@@ -42,17 +42,7 @@ func (cli *Client) SetJSON(path string, obj interface{}) error {
 	return cli.SetValue(path, obj, jsonCodec)
 }
 
-// SyncJSON config
-func (cli *Client) SyncJSON(path string, obj interface{}) error {
-	return cli.Sync(path, obj, jsonCodec)
-}
-
 // SetJSONMapValue in zookeeper
 func (cli *Client) SetJSONMapValue(path, key string, obj interface{}) error {
 	return cli.SetMapValue(path, key, obj, jsonCodec)
-}
-
-// SyncJSONMap config
-func (cli *Client) SyncJSONMap(path string, obj interface{}) error {
-	return cli.SyncMap(path, obj, jsonCodec, nil, true)
 }

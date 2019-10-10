@@ -5,57 +5,66 @@
 
 package zkclient
 
-import (
-	"io"
-
-	"github.com/samuel/go-zookeeper/zk"
-	"github.com/vogo/logger"
-)
-
 // Sync synchronize value of the path to obj
-func (cli *Client) Sync(path string, obj interface{}, codec Codec) error {
-	valuePack, err := Pack(obj, codec)
+func (cli *Client) Sync(path string, obj interface{}, codec Codec) (*Watcher, error) {
+	return cli.SyncWatch(path, obj, codec, nil)
+}
+
+// SyncWatch synchronize value of the path to obj, and trigger listener when value change
+func (cli *Client) SyncWatch(path string, obj interface{}, codec Codec, listener WatchListener) (*Watcher, error) {
+	handler, err := NewValueHandler(obj, codec, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	watcher, err := cli.NewWatcher(path, func(client *Client, evt *zk.Event) (<-chan zk.Event, error) {
-		data, _, wch, zkErr := client.Conn().GetW(path)
-		if zkErr != nil {
-			if zkErr == zk.ErrNoNode {
-				zkErr = client.SetPackValue(path, valuePack)
-				if zkErr != nil {
-					return nil, zkErr
-				}
-				data, _, wch, zkErr = client.Conn().GetW(path)
-			}
-			if zkErr != nil {
-				return nil, zkErr
-			}
-		}
-
-		if data == nil {
-			// ignore nil config
-			return wch, nil
-		}
-
-		zkErr = valuePack.Set(data)
-		if zkErr != nil {
-			if zkErr == io.EOF {
-				return wch, nil // ignore nil data
-			}
-			logger.Warnf("failed to parse %s: %v", path, zkErr)
-			return wch, nil
-		}
-
-		return wch, nil
-	})
+	watcher, err := cli.NewWatcher(path, handler)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	watcher.Watch()
 
+	return watcher, nil
+}
+
+// SyncWatchJSON synchronize json value of the path to obj, and trigger listener when value change
+func (cli *Client) SyncWatchJSON(path string, obj interface{}, listener WatchListener) (*Watcher, error) {
+	return cli.SyncWatch(path, obj, jsonCodec, listener)
+}
+
+// SyncWatchJSON synchronize string value of the path to obj, and trigger listener when value change
+func (cli *Client) SyncWatchString(path string, s *string, listener WatchListener) (*Watcher, error) {
+	return cli.SyncWatch(path, s, stringCodec, listener)
+}
+
+// SyncMap synchronize sub-path value into a map
+func (cli *Client) SyncMap(path string, m interface{}, valueCodec Codec, syncChild bool) error {
+	return cli.SyncWatchMap(path, m, valueCodec, syncChild, nil)
+}
+
+// SyncWatchMap synchronize sub-path value into a map, and trigger listener when child value change
+func (cli *Client) SyncWatchMap(path string, m interface{}, valueCodec Codec, syncChild bool, listener ChildListener) error {
+	mapHandler, err := NewMapHandler(m, syncChild, valueCodec, listener)
+	if err != nil {
+		return err
+	}
+
+	watcher, err := cli.NewWatcher(path, mapHandler)
+
+	if err != nil {
+		return err
+	}
+	watcher.Watch()
 	return nil
+}
+
+// SyncWatchMapJSON synchronize sub-path json value into a map, and trigger listener when child value change
+func (cli *Client) SyncWatchMapJSON(path string, m interface{}, syncChild bool, listener ChildListener) error {
+	return cli.SyncWatchMap(path, m, jsonCodec, syncChild, listener)
+}
+
+// SyncWatchMapJSON synchronize sub-path string value into a map, and trigger listener when child value change
+func (cli *Client) SyncWatchMapString(path string, m map[string]string, syncChild bool, listener ChildListener) error {
+	return cli.SyncWatchMap(path, m, stringCodec, syncChild, listener)
 }

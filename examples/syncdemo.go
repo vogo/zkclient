@@ -31,7 +31,7 @@ func syncString(client *zkclient.Client) error {
 	var test string
 	logger.Infof("before set: %s", test)
 
-	if err := client.Sync("/test", &test, &zkclient.StringCodec{}); err != nil {
+	if _, err := client.SyncWatchString("/test", &test, nil); err != nil {
 		return err
 	}
 
@@ -69,7 +69,7 @@ func syncJson(client *zkclient.Client) error {
 	u := &user{}
 
 	path := "/test/user"
-	if err := client.Sync(path, u, &zkclient.JSONCodec{}); err != nil {
+	if _, err := client.SyncWatchJSON(path, u, nil); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)
@@ -99,7 +99,7 @@ func syncJson(client *zkclient.Client) error {
 func syncMap(client *zkclient.Client) error {
 	path := "/test/users"
 	users := make(map[string]*user)
-	if err := client.SyncJSONMap(path, users); err != nil {
+	if err := client.SyncWatchMapJSON(path, users, true, nil); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)
