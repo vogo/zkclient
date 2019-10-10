@@ -50,9 +50,11 @@ func (w *Watcher) Watch() {
 	go func() {
 		logger.Debugf("start zk watcher: %s", w.Path)
 
-		var evt *zk.Event
-		var ch <-chan zk.Event
-		var err error
+		var (
+			evt *zk.Event
+			ch  <-chan zk.Event
+			err error
+		)
 
 		for {
 			select {

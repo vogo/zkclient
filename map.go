@@ -186,9 +186,7 @@ func (h *MapHandler) handleChild(client *Client, childPath string) (<-chan zk.Ev
 		}
 	}
 
-	err = h.Decode(filepath.Base(childPath), data)
-
-	if err != nil {
+	if err = h.Decode(filepath.Base(childPath), data); err != nil {
 		if err != io.EOF {
 			logger.Warnf("failed to parse %s: %v", childPath, err)
 		}

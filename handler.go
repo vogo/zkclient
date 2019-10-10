@@ -84,23 +84,23 @@ func (h *ValueHandler) SetTo(cli *Client, path string) error {
 }
 
 func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
-	data, _, wch, zkErr := w.client.Conn().GetW(w.Path)
-	if zkErr != nil {
-		if zkErr == zk.ErrNoNode {
-			data, zkErr = h.Encode()
-			if zkErr != nil {
-				return nil, zkErr
-			}
-
-			if err := w.client.SetRawValue(w.Path, data); err != nil {
+	data, _, wch, err := w.client.Conn().GetW(w.Path)
+	if err != nil {
+		if err == zk.ErrNoNode {
+			data, err = h.Encode()
+			if err != nil {
 				return nil, err
 			}
 
-			data, _, wch, zkErr = w.client.Conn().GetW(w.Path)
+			if setErr := w.client.SetRawValue(w.Path, data); setErr != nil {
+				return nil, setErr
+			}
+
+			data, _, wch, err = w.client.Conn().GetW(w.Path)
 		}
 
-		if zkErr != nil {
-			return nil, zkErr
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -109,13 +109,12 @@ func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 		return wch, nil
 	}
 
-	zkErr = h.Decode(data)
-	if zkErr != nil {
-		if zkErr == io.EOF {
+	if err := h.Decode(data); err != nil {
+		if err == io.EOF {
 			return wch, nil // ignore nil data
 		}
 
-		logger.Warnf("failed to parse %s: %v", w.Path, zkErr)
+		logger.Warnf("failed to parse %s: %v", w.Path, err)
 
 		return wch, nil
 	}
