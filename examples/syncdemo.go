@@ -16,12 +16,12 @@ func main() {
 		logger.Fatalf("failed to connect zookeeper: %v", err)
 	}
 
-	//if err := syncString(client); err != nil {
-	//	logger.Fatal(err)
-	//}
-	//if err := syncJson(client); err != nil {
-	//	logger.Fatal(err)
-	//}
+	if err := syncString(client); err != nil {
+		logger.Fatal(err)
+	}
+	if err := syncJson(client); err != nil {
+		logger.Fatal(err)
+	}
 	if err := syncMap(client); err != nil {
 		logger.Fatal(err)
 	}

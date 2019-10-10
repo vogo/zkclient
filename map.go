@@ -8,6 +8,7 @@ package zkclient
 import (
 	"errors"
 	"io"
+	"path/filepath"
 	"reflect"
 	"sync"
 
@@ -57,7 +58,7 @@ func NewMapHandler(obj interface{}, syncChild bool, codec Codec, h ChildListener
 	}, nil
 }
 
-func (h *MapHandler) Get(key string) ([]byte, error) {
+func (h *MapHandler) Encode(key string) ([]byte, error) {
 	v := h.value.MapIndex(reflect.ValueOf(key))
 	if v.IsNil() {
 		return nil, io.EOF
@@ -65,7 +66,7 @@ func (h *MapHandler) Get(key string) ([]byte, error) {
 	return h.codec.Encode(v.Interface())
 }
 
-func (h *MapHandler) Set(key string, data []byte) error {
+func (h *MapHandler) Decode(key string, data []byte) error {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -114,7 +115,7 @@ func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) 
 	for _, child := range children {
 		newChildren[child] = nilStruct
 		if _, ok := oldChildren[child]; !ok {
-			h.syncMapChild(w, child)
+			h.syncWatchChild(w, child)
 		}
 	}
 
@@ -139,44 +140,42 @@ func (ch *childHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, erro
 		return nil, nil // return nil chan to exit watching
 	}
 
-	return ch.mapHandler.loadMapChild(w, w.Path)
+	return ch.mapHandler.handleChild(w.client, w.Path)
 }
 
-func (h *MapHandler) syncMapChild(w *Watcher, child string) {
+func (h *MapHandler) syncWatchChild(w *Watcher, child string) {
 	if !h.syncChild {
-		_, err := h.loadMapChild(w, child)
+		_, err := h.handleChild(w.client, w.Path+"/"+child)
 		if err != nil {
 			logger.Errorf("load zk map child error: %v", err)
 		}
 		return
 	}
 
-	childWatcher := w.newChildWatcher(child, &childHandler{h})
+	childWatcher := w.newChildWatcher(child, &childHandler{mapHandler: h})
 	childWatcher.Watch()
 }
 
-// loadMapChild load map child value into packMap, and return the event chan for waiting the next event
-func (h *MapHandler) loadMapChild(w *Watcher, child string) (<-chan zk.Event, error) {
+// handleChild load map child value into packMap, and return the event chan for waiting the next event
+func (h *MapHandler) handleChild(client *Client, childPath string) (<-chan zk.Event, error) {
 	var data []byte
 	var err error
 	var ch <-chan zk.Event
 
-	childPath := w.Path + "/" + child
-
 	logger.Debugf("read path --> %s", childPath)
 	if h.syncChild {
-		data, _, ch, err = w.client.Conn().GetW(childPath)
+		data, _, ch, err = client.Conn().GetW(childPath)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		data, _, err = w.client.Conn().Get(childPath)
+		data, _, err = client.Conn().Get(childPath)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err = h.Set(child, data)
+	err = h.Decode(filepath.Base(childPath), data)
 
 	if err != nil {
 		if err != io.EOF {

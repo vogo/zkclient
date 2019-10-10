@@ -62,16 +62,16 @@ func (w *Watcher) Watch() {
 			default:
 				if evt != nil && evt.Type == zk.EventNodeDeleted {
 					// return nil chan to exit watcher
-					break
+					return
 				}
 
 				ch, err = w.handler.Handle(w, evt)
 				if err != nil {
 					logger.Errorf("zk watcher handle error %s: %v", w.Path, err)
 
-					//if IsZKRecoverableErr(err) {
-					//	w.client.AppendDeadWatcher(w)
-					//}
+					if IsZKRecoverableErr(err) {
+						w.client.AppendDeadWatcher(w)
+					}
 
 					return // exit watching
 				}
