@@ -17,6 +17,7 @@ import (
 )
 
 type MapHandler struct {
+	path      string
 	lock      sync.Mutex
 	value     reflect.Value
 	typ       reflect.Type
@@ -26,7 +27,11 @@ type MapHandler struct {
 	children  map[string]struct{}
 }
 
-func NewMapHandler(obj interface{}, syncChild bool, codec Codec, h ChildListener) (*MapHandler, error) {
+func NewMapHandler(path string, obj interface{}, syncChild bool, codec Codec, h ChildListener) (*MapHandler, error) {
+	if path == "" {
+		return nil, errors.New("path required")
+	}
+
 	typ := reflect.TypeOf(obj)
 	if typ.Kind() != reflect.Map {
 		return nil, errors.New("map object required")
@@ -51,6 +56,7 @@ func NewMapHandler(obj interface{}, syncChild bool, codec Codec, h ChildListener
 	}
 
 	return &MapHandler{
+		path:      path,
 		value:     reflect.ValueOf(obj),
 		typ:       valueTyp,
 		syncChild: syncChild,
@@ -83,7 +89,7 @@ func (h *MapHandler) Decode(key string, data []byte) error {
 
 	if h.listener != nil {
 		go func() {
-			h.listener(key, v.Interface())
+			h.listener(h.path, key, v.Interface())
 		}()
 	}
 
@@ -98,17 +104,21 @@ func (h *MapHandler) Delete(key string) {
 
 	if h.listener != nil {
 		go func() {
-			h.listener(key, nil)
+			h.listener(h.path, key, nil)
 		}()
 	}
 }
 
+func (h *MapHandler) Path() string {
+	return h.path
+}
+
 func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
-	children, _, wch, err := w.client.Conn().ChildrenW(w.Path)
+	children, _, wch, err := w.client.Conn().ChildrenW(h.path)
 	if err != nil {
 		if err == zk.ErrNoNode {
-			_ = w.client.EnsurePath(w.Path)
-			children, _, wch, err = w.client.Conn().ChildrenW(w.Path)
+			_ = w.client.EnsurePath(h.path)
+			children, _, wch, err = w.client.Conn().ChildrenW(h.path)
 		}
 
 		if err != nil {
@@ -129,7 +139,7 @@ func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) 
 
 	for child := range oldChildren {
 		if _, ok := newChildren[child]; !ok {
-			logger.Infof("zk delete path: %s/%s", w.Path, child)
+			logger.Infof("zk delete path: %s/%s", h.path, child)
 			h.Delete(child)
 		}
 	}
@@ -140,7 +150,12 @@ func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) 
 }
 
 type childHandler struct {
+	path       string
 	mapHandler *MapHandler
+}
+
+func (ch *childHandler) Path() string {
+	return ch.path
 }
 
 func (ch *childHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
@@ -148,19 +163,21 @@ func (ch *childHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, erro
 		return nil, nil // return nil chan to exit watching
 	}
 
-	return ch.mapHandler.handleChild(w.client, w.Path)
+	return ch.mapHandler.handleChild(w.client, ch.path)
 }
 
 func (h *MapHandler) syncWatchChild(w *Watcher, child string) {
+	childPath := h.path + "/" + child
+
 	if !h.syncChild {
-		if _, err := h.handleChild(w.client, w.Path+"/"+child); err != nil {
+		if _, err := h.handleChild(w.client, childPath); err != nil {
 			logger.Errorf("load zk map child error: %v", err)
 		}
 
 		return
 	}
 
-	childWatcher := w.newChildWatcher(child, &childHandler{mapHandler: h})
+	childWatcher := w.newChildWatcher(&childHandler{path: childPath, mapHandler: h})
 	childWatcher.Watch()
 }
 

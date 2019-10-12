@@ -93,7 +93,7 @@ func (cli *Client) AppendDeadWatcher(watcher *Watcher) {
 	cli.Lock()
 	defer cli.Unlock()
 
-	logger.Debugf("zk watcher append to dead queue: %s", watcher.Path)
+	logger.Debugf("zk watcher append to dead queue: %s", watcher.handler.Path())
 	watcher.client = cli
 	cli.deadWatchers = append(cli.deadWatchers, watcher)
 }
@@ -102,7 +102,7 @@ type zkLogger struct {
 }
 
 func (l *zkLogger) Printf(format string, a ...interface{}) {
-	logger.WriteLog("ZK", fmt.Sprintf(format, a...))
+	logger.WriteLog("ZOOK", fmt.Sprintf(format, a...))
 }
 
 // Close connection

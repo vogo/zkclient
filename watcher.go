@@ -14,25 +14,25 @@ import (
 
 // EventHandler zookeeper event listener
 type EventHandler interface {
+	Path() string
 	Handle(*Watcher, *zk.Event) (<-chan zk.Event, error)
 }
 
 // ValueListener node watch listener
-type ValueListener func(interface{})
+type ValueListener func(path string, obj interface{})
 
 // ChildListener child watch listener
-type ChildListener func(child string, obj interface{})
+type ChildListener func(path, child string, obj interface{})
 
 // Watcher zookeeper watcher
 type Watcher struct {
 	client  *Client
 	handler EventHandler
 	close   chan struct{}
-	Path    string
 }
 
 // NewWatcher create new watcher
-func (cli *Client) NewWatcher(path string, handler EventHandler) (*Watcher, error) {
+func (cli *Client) NewWatcher(handler EventHandler) (*Watcher, error) {
 	if handler == nil {
 		return nil, errors.New("nil listener")
 	}
@@ -41,14 +41,14 @@ func (cli *Client) NewWatcher(path string, handler EventHandler) (*Watcher, erro
 		client:  cli,
 		handler: handler,
 		close:   make(chan struct{}),
-		Path:    path,
 	}, nil
 }
 
 // Watch start watch event
 func (w *Watcher) Watch() {
 	go func() {
-		logger.Debugf("start zk watcher: %s", w.Path)
+		path := w.handler.Path()
+		logger.Debugf("start zk watcher: %s", path)
 
 		var (
 			evt *zk.Event
@@ -70,7 +70,7 @@ func (w *Watcher) Watch() {
 
 				ch, err = w.handler.Handle(w, evt)
 				if err != nil {
-					logger.Errorf("zk watcher handle error %s: %v", w.Path, err)
+					logger.Errorf("zk watcher handle error %s: %v", path, err)
 
 					if IsZKRecoverableErr(err) {
 						w.client.AppendDeadWatcher(w)
@@ -86,7 +86,7 @@ func (w *Watcher) Watch() {
 
 				event := <-ch
 				evt = &event
-				logger.Debugf("zk watcher new event %s: %v", w.Path, evt)
+				logger.Debugf("zk watcher new event %s: %v", path, evt)
 
 				if !StateAlive(evt.State) {
 					w.client.AppendDeadWatcher(w)
@@ -97,11 +97,10 @@ func (w *Watcher) Watch() {
 	}()
 }
 
-func (w *Watcher) newChildWatcher(child string, handler EventHandler) *Watcher {
+func (w *Watcher) newChildWatcher(handler EventHandler) *Watcher {
 	return &Watcher{
 		client:  w.client,
 		handler: handler,
 		close:   w.close,
-		Path:    w.Path + "/" + child,
 	}
 }

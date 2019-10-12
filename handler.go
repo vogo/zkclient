@@ -15,6 +15,7 @@ import (
 )
 
 type ValueHandler struct {
+	path     string
 	value    reflect.Value
 	typ      reflect.Type
 	codec    Codec
@@ -30,7 +31,11 @@ func StringValueHandler(s *string, listener ValueListener) *ValueHandler {
 	}
 }
 
-func NewValueHandler(obj interface{}, codec Codec, listener ValueListener) (*ValueHandler, error) {
+func NewValueHandler(path string, obj interface{}, codec Codec, listener ValueListener) (*ValueHandler, error) {
+	if path == "" {
+		return nil, errors.New("path required")
+	}
+
 	typ := reflect.TypeOf(obj)
 	if typ.Kind() != reflect.Ptr {
 		return nil, errors.New("pointer object required")
@@ -45,6 +50,7 @@ func NewValueHandler(obj interface{}, codec Codec, listener ValueListener) (*Val
 	}
 
 	return &ValueHandler{
+		path:     path,
 		value:    reflect.ValueOf(obj),
 		typ:      typ,
 		codec:    codec,
@@ -66,7 +72,7 @@ func (h *ValueHandler) Decode(data []byte) error {
 
 	if h.listener != nil {
 		go func() {
-			h.listener(h.value.Interface())
+			h.listener(h.path, h.value.Interface())
 		}()
 	}
 
@@ -83,8 +89,12 @@ func (h *ValueHandler) SetTo(cli *Client, path string) error {
 	return cli.SetRawValue(path, bytes)
 }
 
+func (h *ValueHandler) Path() string {
+	return h.path
+}
+
 func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
-	data, _, wch, err := w.client.Conn().GetW(w.Path)
+	data, _, wch, err := w.client.Conn().GetW(h.path)
 	if err != nil {
 		if err == zk.ErrNoNode {
 			data, err = h.Encode()
@@ -92,11 +102,11 @@ func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 				return nil, err
 			}
 
-			if setErr := w.client.SetRawValue(w.Path, data); setErr != nil {
+			if setErr := w.client.SetRawValue(h.path, data); setErr != nil {
 				return nil, setErr
 			}
 
-			data, _, wch, err = w.client.Conn().GetW(w.Path)
+			data, _, wch, err = w.client.Conn().GetW(h.path)
 		}
 
 		if err != nil {
@@ -114,7 +124,7 @@ func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 			return wch, nil // ignore nil data
 		}
 
-		logger.Warnf("failed to parse %s: %v", w.Path, err)
+		logger.Warnf("failed to parse %s: %v", h.path, err)
 
 		return wch, nil
 	}

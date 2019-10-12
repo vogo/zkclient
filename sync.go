@@ -12,12 +12,12 @@ func (cli *Client) Sync(path string, obj interface{}, codec Codec) (*Watcher, er
 
 // SyncWatch synchronize value of the path to obj, and trigger listener when value change
 func (cli *Client) SyncWatch(path string, obj interface{}, codec Codec, listener ValueListener) (*Watcher, error) {
-	handler, err := NewValueHandler(obj, codec, nil)
+	handler, err := NewValueHandler(path, obj, codec, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	watcher, err := cli.NewWatcher(path, handler)
+	watcher, err := cli.NewWatcher(handler)
 
 	if err != nil {
 		return nil, err
@@ -45,12 +45,12 @@ func (cli *Client) SyncMap(path string, m interface{}, valueCodec Codec, syncChi
 
 // SyncWatchMap synchronize sub-path value into a map, and trigger listener when child value change
 func (cli *Client) SyncWatchMap(path string, m interface{}, valueCodec Codec, syncChild bool, listener ChildListener) error {
-	mapHandler, err := NewMapHandler(m, syncChild, valueCodec, listener)
+	mapHandler, err := NewMapHandler(path, m, syncChild, valueCodec, listener)
 	if err != nil {
 		return err
 	}
 
-	watcher, err := cli.NewWatcher(path, mapHandler)
+	watcher, err := cli.NewWatcher(mapHandler)
 
 	if err != nil {
 		return err
