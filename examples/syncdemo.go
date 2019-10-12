@@ -99,7 +99,7 @@ func syncJson(client *zkclient.Client) error {
 func syncMap(client *zkclient.Client) error {
 	path := "/test/users"
 	users := make(map[string]*user)
-	if err := client.SyncWatchJSONMap(path, users, true, nil); err != nil {
+	if _, err := client.SyncWatchJSONMap(path, users, true, nil); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)

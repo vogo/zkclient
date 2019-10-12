@@ -39,34 +39,34 @@ func (cli *Client) SyncWatchString(path string, s *string, listener ValueListene
 }
 
 // SyncMap synchronize sub-path value into a map
-func (cli *Client) SyncMap(path string, m interface{}, valueCodec Codec, syncChild bool) error {
+func (cli *Client) SyncMap(path string, m interface{}, valueCodec Codec, syncChild bool) (*Watcher, error) {
 	return cli.SyncWatchMap(path, m, valueCodec, syncChild, nil)
 }
 
 // SyncWatchMap synchronize sub-path value into a map, and trigger listener when child value change
-func (cli *Client) SyncWatchMap(path string, m interface{}, valueCodec Codec, syncChild bool, listener ChildListener) error {
+func (cli *Client) SyncWatchMap(path string, m interface{}, valueCodec Codec, syncChild bool, listener ChildListener) (*Watcher, error) {
 	mapHandler, err := NewMapHandler(path, m, syncChild, valueCodec, listener)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	watcher, err := cli.NewWatcher(mapHandler)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	watcher.Watch()
 
-	return nil
+	return watcher, nil
 }
 
 // SyncWatchJSONMap synchronize sub-path json value into a map, and trigger listener when child value change
-func (cli *Client) SyncWatchJSONMap(path string, m interface{}, syncChild bool, listener ChildListener) error {
+func (cli *Client) SyncWatchJSONMap(path string, m interface{}, syncChild bool, listener ChildListener) (*Watcher, error) {
 	return cli.SyncWatchMap(path, m, jsonCodec, syncChild, listener)
 }
 
 // SyncWatchStringMap synchronize sub-path string value into a map, and trigger listener when child value change
-func (cli *Client) SyncWatchStringMap(path string, m map[string]string, syncChild bool, listener ChildListener) error {
+func (cli *Client) SyncWatchStringMap(path string, m map[string]string, syncChild bool, listener ChildListener) (*Watcher, error) {
 	return cli.SyncWatchMap(path, m, stringCodec, syncChild, listener)
 }

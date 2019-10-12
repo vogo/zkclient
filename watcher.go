@@ -28,7 +28,7 @@ type ChildListener func(path, child string, obj interface{})
 type Watcher struct {
 	client  *Client
 	handler EventHandler
-	close   chan struct{}
+	done    chan struct{}
 }
 
 // NewWatcher create new watcher
@@ -40,8 +40,13 @@ func (cli *Client) NewWatcher(handler EventHandler) (*Watcher, error) {
 	return &Watcher{
 		client:  cli,
 		handler: handler,
-		close:   make(chan struct{}),
+		done:    make(chan struct{}),
 	}, nil
+}
+
+// Close close watch event
+func (w *Watcher) Close() {
+	close(w.done)
 }
 
 // Watch start watch event
@@ -57,34 +62,33 @@ func (w *Watcher) Watch() {
 		)
 
 		for {
+			if evt != nil && evt.Type == zk.EventNodeDeleted {
+				// return nil chan to exit watcher
+				return
+			}
+
+			ch, err = w.handler.Handle(w, evt)
+			if err != nil {
+				logger.Errorf("zk watcher handle error %s: %v", path, err)
+
+				if IsZKRecoverableErr(err) {
+					w.client.AppendDeadWatcher(w)
+				}
+
+				return // exit watching
+			}
+
+			if ch == nil {
+				// return nil chan to exit watcher
+				return
+			}
+
 			select {
-			case <-w.client.close:
+			case <-w.client.done:
 				return
-			case <-w.close:
+			case <-w.done:
 				return
-			default:
-				if evt != nil && evt.Type == zk.EventNodeDeleted {
-					// return nil chan to exit watcher
-					return
-				}
-
-				ch, err = w.handler.Handle(w, evt)
-				if err != nil {
-					logger.Errorf("zk watcher handle error %s: %v", path, err)
-
-					if IsZKRecoverableErr(err) {
-						w.client.AppendDeadWatcher(w)
-					}
-
-					return // exit watching
-				}
-
-				if ch == nil {
-					// return nil chan to exit watcher
-					return
-				}
-
-				event := <-ch
+			case event := <-ch:
 				evt = &event
 				logger.Debugf("zk watcher new event %s: %v", path, evt)
 
@@ -101,6 +105,6 @@ func (w *Watcher) newChildWatcher(handler EventHandler) *Watcher {
 	return &Watcher{
 		client:  w.client,
 		handler: handler,
-		close:   w.close,
+		done:    w.done,
 	}
 }

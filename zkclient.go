@@ -25,7 +25,7 @@ type Client struct {
 	servers      []string
 	timeout      time.Duration
 	conn         *zk.Conn
-	close        chan struct{}
+	done         chan struct{}
 	deadWatchers []*Watcher
 	dialer       zk.Dialer
 	alarmTrigger AlarmTrigger
@@ -36,7 +36,7 @@ func NewClient(servers []string, timeout time.Duration) (*Client, error) {
 	client := new(Client)
 	client.servers = servers
 	client.timeout = timeout
-	client.close = make(chan struct{})
+	client.done = make(chan struct{})
 	client.dialer = func(network, address string, dialTimeout time.Duration) (net.Conn, error) {
 		conn, err := net.DialTimeout(network, address, dialTimeout)
 		if err != nil && client.alarmTrigger != nil {
@@ -54,7 +54,7 @@ func NewClient(servers []string, timeout time.Duration) (*Client, error) {
 	go func() {
 		ticker := time.NewTicker(time.Second * 20)
 		select {
-		case <-client.close:
+		case <-client.done:
 			return
 		case <-ticker.C:
 			if !client.ConnAlive() && !client.Connecting() {
@@ -102,6 +102,10 @@ type zkLogger struct {
 }
 
 func (l *zkLogger) Printf(format string, a ...interface{}) {
+	if logger.Level < logger.LevelDebug {
+		return
+	}
+
 	logger.WriteLog("ZOOK", fmt.Sprintf(format, a...))
 }
 
@@ -119,7 +123,7 @@ func (cli *Client) connect() error {
 
 // Close client, NOT use Client which already calling Close()
 func (cli *Client) Close() {
-	close(cli.close)
+	close(cli.done)
 
 	if cli.ConnAlive() {
 		cli.conn.Close()
