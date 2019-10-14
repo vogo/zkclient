@@ -54,3 +54,9 @@ func (cli *Client) ParseJSON(path string, target interface{}) error {
 
 	return json.Unmarshal(data, target)
 }
+
+// GetChildren get child nodes
+func (cli *Client) GetChildren(path string) ([]string, error) {
+	children, _, err := cli.Conn().Children(path)
+	return children, err
+}

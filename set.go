@@ -67,9 +67,15 @@ func (cli *Client) SetMapJSONValue(path, key string, obj interface{}) error {
 	return cli.SetMapValue(path, key, obj, jsonCodec)
 }
 
+// CreateTempRawValue create temp raw value in zookeeper
+func (cli *Client) CreateTempRawValue(path string, bytes []byte) error {
+	_, err := cli.Conn().Create(path, bytes, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+	return err
+}
+
 // SetTempRawValue set temp raw value in zookeeper
 func (cli *Client) SetTempRawValue(path string, bytes []byte) error {
-	_, err := cli.Conn().Create(path, bytes, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+	err := cli.CreateTempRawValue(path, bytes)
 	if err == nil {
 		return nil
 	}
