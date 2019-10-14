@@ -16,18 +16,18 @@ import (
 	"github.com/vogo/logger"
 )
 
-type MapHandler struct {
+type mapHandler struct {
 	path      string
 	lock      sync.Mutex
 	value     reflect.Value
 	typ       reflect.Type
-	syncChild bool
 	codec     Codec
+	syncChild bool
 	listener  ChildListener
 	children  map[string]struct{}
 }
 
-func NewMapHandler(path string, obj interface{}, syncChild bool, codec Codec, h ChildListener) (*MapHandler, error) {
+func newMapHandler(path string, obj interface{}, syncChild bool, codec Codec, watchOnly bool, listener ChildListener) (*mapHandler, error) {
 	if path == "" {
 		return nil, errors.New("path required")
 	}
@@ -55,19 +55,32 @@ func NewMapHandler(path string, obj interface{}, syncChild bool, codec Codec, h 
 		return nil, errors.New("codec required")
 	}
 
-	return &MapHandler{
+	if watchOnly && listener == nil {
+		return nil, errors.New("listener required when watch only")
+	}
+
+	handler := &mapHandler{
 		path:      path,
-		value:     reflect.ValueOf(obj),
 		typ:       valueTyp,
 		syncChild: syncChild,
 		codec:     codec,
 		lock:      sync.Mutex{},
-		listener:  h,
+		listener:  listener,
 		children:  make(map[string]struct{}),
-	}, nil
+	}
+
+	if !watchOnly {
+		handler.value = reflect.ValueOf(obj)
+	}
+
+	return handler, nil
 }
 
-func (h *MapHandler) Encode(key string) ([]byte, error) {
+func (h *mapHandler) Encode(key string) ([]byte, error) {
+	if h.value == nilValue {
+		return nil, io.EOF
+	}
+
 	v := h.value.MapIndex(reflect.ValueOf(key))
 	if v.IsNil() {
 		return nil, io.EOF
@@ -76,7 +89,7 @@ func (h *MapHandler) Encode(key string) ([]byte, error) {
 	return h.codec.Encode(v.Interface())
 }
 
-func (h *MapHandler) Decode(key string, data []byte) error {
+func (h *mapHandler) Decode(key string, data []byte) error {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -85,35 +98,49 @@ func (h *MapHandler) Decode(key string, data []byte) error {
 		return err
 	}
 
-	h.value.SetMapIndex(reflect.ValueOf(key), v)
+	if h.value != nilValue {
+		h.value.SetMapIndex(reflect.ValueOf(key), v)
+	}
 
 	if h.listener != nil {
 		go func() {
-			h.listener(h.path, key, v.Interface())
+			h.listener.Update(h.path, key, v.Interface())
 		}()
 	}
 
 	return nil
 }
 
-func (h *MapHandler) Delete(key string) {
+func (h *mapHandler) Delete(key string) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	h.value.SetMapIndex(reflect.ValueOf(key), reflect.Value{})
+	if h.value != nilValue {
+		h.value.SetMapIndex(reflect.ValueOf(key), reflect.Value{})
+	}
 
 	if h.listener != nil {
 		go func() {
-			h.listener(h.path, key, nil)
+			h.listener.Delete(h.path, key)
 		}()
 	}
 }
 
-func (h *MapHandler) Path() string {
+func (h *mapHandler) Path() string {
 	return h.path
 }
 
-func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
+func (h *mapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
+	if evt != nil && evt.Type == zk.EventNodeDeleted {
+		logger.Infof("zk watcher [%s] node deleted", h.path)
+
+		for child := range h.children {
+			h.Delete(child)
+		}
+
+		return nil, nil
+	}
+
 	children, _, wch, err := w.client.Conn().ChildrenW(h.path)
 	if err != nil {
 		if err == zk.ErrNoNode {
@@ -150,8 +177,8 @@ func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) 
 }
 
 type childHandler struct {
-	path       string
-	mapHandler *MapHandler
+	path    string
+	handler *mapHandler
 }
 
 func (ch *childHandler) Path() string {
@@ -163,10 +190,10 @@ func (ch *childHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, erro
 		return nil, nil // return nil chan to exit watching
 	}
 
-	return ch.mapHandler.handleChild(w.client, ch.path)
+	return ch.handler.handleChild(w.client, ch.path)
 }
 
-func (h *MapHandler) syncWatchChild(w *Watcher, child string) {
+func (h *mapHandler) syncWatchChild(w *Watcher, child string) {
 	childPath := h.path + "/" + child
 
 	if !h.syncChild {
@@ -177,12 +204,12 @@ func (h *MapHandler) syncWatchChild(w *Watcher, child string) {
 		return
 	}
 
-	childWatcher := w.newChildWatcher(&childHandler{path: childPath, mapHandler: h})
+	childWatcher := w.newChildWatcher(&childHandler{path: childPath, handler: h})
 	childWatcher.Watch()
 }
 
 // handleChild load map child value into packMap, and return the event chan for waiting the next event
-func (h *MapHandler) handleChild(client *Client, childPath string) (<-chan zk.Event, error) {
+func (h *mapHandler) handleChild(client *Client, childPath string) (<-chan zk.Event, error) {
 	var (
 		data []byte
 		err  error

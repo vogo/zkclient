@@ -14,7 +14,7 @@ import (
 	"github.com/vogo/logger"
 )
 
-type ValueHandler struct {
+type valueHandler struct {
 	path     string
 	value    reflect.Value
 	typ      reflect.Type
@@ -22,17 +22,7 @@ type ValueHandler struct {
 	listener ValueListener
 }
 
-func StringValueHandler(path string, s *string, listener ValueListener) *ValueHandler {
-	return &ValueHandler{
-		path:     path,
-		value:    reflect.ValueOf(s),
-		typ:      reflect.TypeOf(s),
-		codec:    stringCodec,
-		listener: listener,
-	}
-}
-
-func NewValueHandler(path string, obj interface{}, codec Codec, listener ValueListener) (*ValueHandler, error) {
+func newValueHandler(path string, obj interface{}, codec Codec, watchOnly bool, listener ValueListener) (*valueHandler, error) {
 	if path == "" {
 		return nil, errors.New("path required")
 	}
@@ -50,30 +40,45 @@ func NewValueHandler(path string, obj interface{}, codec Codec, listener ValueLi
 		return nil, errors.New("codec required")
 	}
 
-	return &ValueHandler{
+	if watchOnly && listener == nil {
+		return nil, errors.New("listener required when watch only")
+	}
+
+	handler := &valueHandler{
 		path:     path,
-		value:    reflect.ValueOf(obj),
 		typ:      typ,
 		codec:    codec,
 		listener: listener,
-	}, nil
+	}
+
+	if !watchOnly {
+		handler.value = reflect.ValueOf(obj)
+	}
+
+	return handler, nil
 }
 
-func (h *ValueHandler) Encode() ([]byte, error) {
+func (h *valueHandler) Encode() ([]byte, error) {
+	if h.value == nilValue {
+		return nil, nil
+	}
+
 	return h.codec.Encode(h.value.Interface())
 }
 
-func (h *ValueHandler) Decode(data []byte) error {
+func (h *valueHandler) Decode(data []byte) error {
 	v, err := h.codec.Decode(data, h.typ)
 	if err != nil {
 		return err
 	}
 
-	h.value.Elem().Set(v.Elem())
+	if h.value != nilValue {
+		h.value.Elem().Set(v.Elem())
+	}
 
 	if h.listener != nil {
 		go func() {
-			h.listener(h.path, h.value.Interface())
+			h.listener.Update(h.path, h.value.Interface())
 		}()
 	}
 
@@ -81,7 +86,7 @@ func (h *ValueHandler) Decode(data []byte) error {
 }
 
 // SetTo set value in zookeeper
-func (h *ValueHandler) SetTo(cli *Client, path string) error {
+func (h *valueHandler) SetTo(cli *Client, path string) error {
 	bytes, err := h.Encode()
 	if err != nil {
 		return err
@@ -90,11 +95,21 @@ func (h *ValueHandler) SetTo(cli *Client, path string) error {
 	return cli.SetRawValue(path, bytes)
 }
 
-func (h *ValueHandler) Path() string {
+func (h *valueHandler) Path() string {
 	return h.path
 }
 
-func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
+func (h *valueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) {
+	if evt != nil && evt.Type == zk.EventNodeDeleted {
+		logger.Infof("zk watcher [%s] node deleted", h.path)
+
+		if h.listener != nil {
+			h.listener.Delete(h.path)
+		}
+
+		return nil, nil
+	}
+
 	data, _, wch, err := w.client.Conn().GetW(h.path)
 	if err != nil {
 		if err == zk.ErrNoNode {

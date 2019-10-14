@@ -5,6 +5,9 @@
 
 package zkclient
 
+import "reflect"
+
 var (
 	nilStruct = struct{}{}
+	nilValue  = reflect.Value{}
 )

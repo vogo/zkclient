@@ -19,10 +19,16 @@ type EventHandler interface {
 }
 
 // ValueListener node watch listener
-type ValueListener func(path string, obj interface{})
+type ValueListener interface {
+	Update(path string, obj interface{})
+	Delete(path string)
+}
 
 // ChildListener child watch listener
-type ChildListener func(path, child string, obj interface{})
+type ChildListener interface {
+	Update(path, child string, obj interface{})
+	Delete(path, child string)
+}
 
 // Watcher zookeeper watcher
 type Watcher struct {
@@ -62,11 +68,6 @@ func (w *Watcher) Watch() {
 		)
 
 		for {
-			if evt != nil && evt.Type == zk.EventNodeDeleted {
-				logger.Infof("zk watcher [%s] exit for node deleted", path)
-				return
-			}
-
 			ch, err = w.handler.Handle(w, evt)
 			if err != nil {
 				logger.Errorf("zk watcher [%s] handle error: %v", path, err)
@@ -79,6 +80,8 @@ func (w *Watcher) Watch() {
 			}
 
 			if ch == nil {
+				logger.Debugf("zk watcher [%s] exit", path)
+
 				// return nil chan to exit watcher
 				return
 			}

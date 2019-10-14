@@ -14,8 +14,8 @@
 //
 //- `Codec`: value encode/decode
 //- `Watcher`: loop watch control
-//- `Handler`: include `ValueHandler` and `MapHandler`, set/get value, handle event, synchronize value, trigger listener
-//- `Listener`:  include `ValueListener` and `ChildListener`,  listen value change
+//- `Handler`: include `valueHandler` and `mapHandler`, set/get/delete value, handle event, synchronize value, trigger listener
+//- `Listener`:  include `ValueListener` and `ChildListener`,  listen value updated/deleted
 //
 //## API
 //

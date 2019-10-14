@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vogo/logger"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -104,6 +106,16 @@ func TestClient_SyncJSON(t *testing.T) {
 	w.Close()
 }
 
+type mListener struct {
+}
+
+func (l *mListener) Update(path, child string, obj interface{}) {
+	logger.Infof("----- %s/%s: %v", path, child, obj)
+}
+func (l *mListener) Delete(path, child string) {
+	logger.Infof("----- %s/%s delete", path, child)
+}
+
 func TestClient_SyncJSONMap(t *testing.T) {
 	if !isLocalZKAlive(t) {
 		return
@@ -111,7 +123,7 @@ func TestClient_SyncJSONMap(t *testing.T) {
 
 	path := "/test/users"
 	users := make(map[string]*user)
-	w, err := testClient.SyncWatchJSONMap(path, users, true, nil)
+	w, err := testClient.SyncWatchJSONMap(path, users, true, &mListener{})
 	assert.Nil(t, err)
 
 	time.Sleep(time.Second)
