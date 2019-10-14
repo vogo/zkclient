@@ -60,3 +60,9 @@ func (cli *Client) GetChildren(path string) ([]string, error) {
 	children, _, err := cli.Conn().Children(path)
 	return children, err
 }
+
+// Exists check node exists
+func (cli *Client) Exists(path string) (bool, error) {
+	exists, _, err := cli.Conn().Exists(path)
+	return exists, err
+}

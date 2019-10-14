@@ -21,21 +21,19 @@ type AlarmTrigger func(err error)
 
 // Client for zookeeper
 type Client struct {
-	sync.Mutex
+	ClientOptions
+	lock         sync.Mutex
 	servers      []string
-	timeout      time.Duration
 	conn         *zk.Conn
 	done         chan struct{}
 	deadWatchers []*Watcher
 	dialer       zk.Dialer
-	alarmTrigger AlarmTrigger
 }
 
 // NewClient zookeeper client
-func NewClient(servers []string, timeout time.Duration) (*Client, error) {
+func NewClient(servers []string, options ...ClientOption) *Client {
 	client := new(Client)
 	client.servers = servers
-	client.timeout = timeout
 	client.done = make(chan struct{})
 	client.dialer = func(network, address string, dialTimeout time.Duration) (net.Conn, error) {
 		conn, err := net.DialTimeout(network, address, dialTimeout)
@@ -46,10 +44,15 @@ func NewClient(servers []string, timeout time.Duration) (*Client, error) {
 		return conn, err
 	}
 
-	err := client.connect()
-	if err != nil {
-		return nil, err
+	for _, option := range options {
+		option(&client.ClientOptions)
 	}
+
+	if client.timeout <= 0 {
+		client.timeout = defaultTimeout
+	}
+
+	_ = client.connect()
 
 	go func() {
 		ticker := time.NewTicker(time.Second * 20)
@@ -69,18 +72,13 @@ func NewClient(servers []string, timeout time.Duration) (*Client, error) {
 		}
 	}()
 
-	return client, err
-}
-
-// SetAlarmTrigger set zookeeper alarm function
-func (cli *Client) SetAlarmTrigger(f AlarmTrigger) {
-	cli.alarmTrigger = f
+	return client
 }
 
 // collectDeadWatchers return queued watchers, and empty the queue
 func (cli *Client) collectDeadWatchers() []*Watcher {
-	cli.Lock()
-	defer cli.Unlock()
+	cli.lock.Lock()
+	defer cli.lock.Unlock()
 
 	watchers := cli.deadWatchers
 	cli.deadWatchers = []*Watcher{}
@@ -90,8 +88,8 @@ func (cli *Client) collectDeadWatchers() []*Watcher {
 
 // AppendDeadWatcher add dead watcher, wait to watch again
 func (cli *Client) AppendDeadWatcher(watcher *Watcher) {
-	cli.Lock()
-	defer cli.Unlock()
+	cli.lock.Lock()
+	defer cli.lock.Unlock()
 
 	logger.Debugf("zk watcher append to dead queue: %s", watcher.handler.Path())
 	watcher.client = cli

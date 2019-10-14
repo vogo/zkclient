@@ -5,7 +5,14 @@
 
 package zkclient
 
-import "reflect"
+import (
+	"reflect"
+	"time"
+)
+
+const (
+	defaultTimeout = time.Second * 5
+)
 
 var (
 	nilStruct = struct{}{}

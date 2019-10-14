@@ -11,9 +11,9 @@ import (
 )
 
 func main() {
-	client, err := zkclient.NewClient([]string{"127.0.0.1:2181"}, time.Second*5)
-	if err != nil {
-		logger.Fatalf("failed to connect zookeeper: %v", err)
+	client := zkclient.NewClient([]string{"127.0.0.1:2181"})
+	if !client.ConnAlive() {
+		logger.Fatalf("failed to connect zookeeper")
 	}
 
 	if err := syncString(client); err != nil {

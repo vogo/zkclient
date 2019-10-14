@@ -17,17 +17,19 @@ import (
 )
 
 type mapHandler struct {
-	path      string
-	lock      sync.Mutex
-	value     reflect.Value
-	typ       reflect.Type
-	codec     Codec
-	syncChild bool
-	listener  ChildListener
-	children  map[string]struct{}
+	path        string
+	lock        sync.Mutex
+	value       reflect.Value
+	typ         reflect.Type
+	codec       Codec
+	syncChild   bool
+	listenAsync bool
+	listener    ChildListener
+	children    map[string]struct{}
 }
 
-func newMapHandler(path string, obj interface{}, syncChild bool, codec Codec, watchOnly bool, listener ChildListener) (*mapHandler, error) {
+func (cli *Client) newMapHandler(path string, obj interface{}, syncChild bool, codec Codec,
+	watchOnly bool, listener ChildListener) (*mapHandler, error) {
 	if path == "" {
 		return nil, errors.New("path required")
 	}
@@ -60,13 +62,14 @@ func newMapHandler(path string, obj interface{}, syncChild bool, codec Codec, wa
 	}
 
 	handler := &mapHandler{
-		path:      path,
-		typ:       valueTyp,
-		syncChild: syncChild,
-		codec:     codec,
-		lock:      sync.Mutex{},
-		listener:  listener,
-		children:  make(map[string]struct{}),
+		path:        path,
+		typ:         valueTyp,
+		syncChild:   syncChild,
+		codec:       codec,
+		lock:        sync.Mutex{},
+		listenAsync: cli.listenAsync,
+		listener:    listener,
+		children:    make(map[string]struct{}),
 	}
 
 	if !watchOnly {
@@ -103,9 +106,15 @@ func (h *mapHandler) Decode(key string, data []byte) error {
 	}
 
 	if h.listener != nil {
-		go func() {
+		f := func() {
 			h.listener.Update(h.path, key, v.Interface())
-		}()
+		}
+
+		if h.listenAsync {
+			go f()
+		} else {
+			f()
+		}
 	}
 
 	return nil
@@ -120,9 +129,15 @@ func (h *mapHandler) Delete(key string) {
 	}
 
 	if h.listener != nil {
-		go func() {
+		f := func() {
 			h.listener.Delete(h.path, key)
-		}()
+		}
+
+		if h.listenAsync {
+			go f()
+		} else {
+			f()
+		}
 	}
 }
 

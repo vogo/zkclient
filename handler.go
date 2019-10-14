@@ -15,14 +15,17 @@ import (
 )
 
 type valueHandler struct {
-	path     string
-	value    reflect.Value
-	typ      reflect.Type
-	codec    Codec
-	listener ValueListener
+	path        string
+	value       reflect.Value
+	typ         reflect.Type
+	codec       Codec
+	listenAsync bool
+	listener    ValueListener
 }
 
-func newValueHandler(path string, obj interface{}, codec Codec, watchOnly bool, listener ValueListener) (*valueHandler, error) {
+func (cli *Client) newValueHandler(path string, obj interface{}, codec Codec,
+	watchOnly bool,
+	listener ValueListener) (*valueHandler, error) {
 	if path == "" {
 		return nil, errors.New("path required")
 	}
@@ -45,10 +48,11 @@ func newValueHandler(path string, obj interface{}, codec Codec, watchOnly bool, 
 	}
 
 	handler := &valueHandler{
-		path:     path,
-		typ:      typ,
-		codec:    codec,
-		listener: listener,
+		path:        path,
+		typ:         typ,
+		codec:       codec,
+		listenAsync: cli.listenAsync,
+		listener:    listener,
 	}
 
 	if !watchOnly {
@@ -77,9 +81,15 @@ func (h *valueHandler) Decode(data []byte) error {
 	}
 
 	if h.listener != nil {
-		go func() {
+		f := func() {
 			h.listener.Update(h.path, h.value.Interface())
-		}()
+		}
+
+		if h.listenAsync {
+			go f()
+		} else {
+			f()
+		}
 	}
 
 	return nil

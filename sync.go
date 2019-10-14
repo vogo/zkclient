@@ -12,7 +12,7 @@ func (cli *Client) Sync(path string, obj interface{}, codec Codec) (*Watcher, er
 
 // SyncWatch synchronize value of the path to obj, and trigger listener when value change
 func (cli *Client) SyncWatch(path string, obj interface{}, codec Codec, listener ValueListener) (*Watcher, error) {
-	handler, err := newValueHandler(path, obj, codec, false, listener)
+	handler, err := cli.newValueHandler(path, obj, codec, false, listener)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func (cli *Client) SyncWatch(path string, obj interface{}, codec Codec, listener
 
 // Watch synchronize value of the path to obj, and trigger listener when value change
 func (cli *Client) Watch(path string, obj interface{}, codec Codec, listener ValueListener) (*Watcher, error) {
-	handler, err := newValueHandler(path, obj, codec, true, listener)
+	handler, err := cli.newValueHandler(path, obj, codec, true, listener)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (cli *Client) SyncMap(path string, m interface{}, valueCodec Codec, syncChi
 
 // SyncWatchMap synchronize sub-path value into a map, and trigger listener when child value change
 func (cli *Client) SyncWatchMap(path string, m interface{}, valueCodec Codec, syncChild bool, listener ChildListener) (*Watcher, error) {
-	handler, err := newMapHandler(path, m, syncChild, valueCodec, false, listener)
+	handler, err := cli.newMapHandler(path, m, syncChild, valueCodec, false, listener)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (cli *Client) SyncWatchMap(path string, m interface{}, valueCodec Codec, sy
 
 // SyncWatchMap synchronize sub-path value into a map, and trigger listener when child value change
 func (cli *Client) WatchMap(path string, m interface{}, valueCodec Codec, syncChild bool, listener ChildListener) (*Watcher, error) {
-	handler, err := newMapHandler(path, m, syncChild, valueCodec, true, listener)
+	handler, err := cli.newMapHandler(path, m, syncChild, valueCodec, true, listener)
 	if err != nil {
 		return nil, err
 	}

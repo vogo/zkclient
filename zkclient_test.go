@@ -45,9 +45,9 @@ func isLocalZKAlive(t *testing.T) bool {
 }
 
 func connectLocalZK(_ *testing.T) *Client {
-	c, err := NewClient([]string{"127.0.0.1:2181"}, time.Second)
-	if err != nil {
-		logger.Errorf("zk can't connect: %v", err)
+	c := NewClient([]string{"127.0.0.1:2181"})
+	if c.ConnAlive() {
+		logger.Errorf("zk can't connect")
 		return nil
 	}
 
