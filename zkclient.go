@@ -182,6 +182,8 @@ func (cli *Client) EnsurePath(path string) error {
 
 // Delete path
 func (cli *Client) Delete(path string) error {
+	logger.Infof("zk delete node [%s]", path)
+
 	if err := cli.conn.Delete(path, -1); err != nil && err != zk.ErrNoNode {
 		return err
 	}

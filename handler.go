@@ -22,8 +22,9 @@ type ValueHandler struct {
 	listener ValueListener
 }
 
-func StringValueHandler(s *string, listener ValueListener) *ValueHandler {
+func StringValueHandler(path string, s *string, listener ValueListener) *ValueHandler {
 	return &ValueHandler{
+		path:     path,
 		value:    reflect.ValueOf(s),
 		typ:      reflect.TypeOf(s),
 		codec:    stringCodec,
@@ -124,7 +125,7 @@ func (h *ValueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 			return wch, nil // ignore nil data
 		}
 
-		logger.Warnf("failed to parse %s: %v", h.path, err)
+		logger.Warnf("zk failed to parse %s: %v", h.path, err)
 
 		return wch, nil
 	}

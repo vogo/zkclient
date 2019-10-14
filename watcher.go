@@ -53,7 +53,7 @@ func (w *Watcher) Close() {
 func (w *Watcher) Watch() {
 	go func() {
 		path := w.handler.Path()
-		logger.Debugf("start zk watcher: %s", path)
+		logger.Debugf("zk watcher [%s] start", path)
 
 		var (
 			evt *zk.Event
@@ -63,13 +63,13 @@ func (w *Watcher) Watch() {
 
 		for {
 			if evt != nil && evt.Type == zk.EventNodeDeleted {
-				// return nil chan to exit watcher
+				logger.Infof("zk watcher [%s] exit for node deleted", path)
 				return
 			}
 
 			ch, err = w.handler.Handle(w, evt)
 			if err != nil {
-				logger.Errorf("zk watcher handle error %s: %v", path, err)
+				logger.Errorf("zk watcher [%s] handle error: %v", path, err)
 
 				if IsZKRecoverableErr(err) {
 					w.client.AppendDeadWatcher(w)
@@ -85,12 +85,14 @@ func (w *Watcher) Watch() {
 
 			select {
 			case <-w.client.done:
+				logger.Debugf("zk watcher [%s] exit for client closed", path)
 				return
 			case <-w.done:
+				logger.Debugf("zk watcher [%s] exit for watcher closed", path)
 				return
 			case event := <-ch:
 				evt = &event
-				logger.Debugf("zk watcher new event %s: %v", path, evt)
+				logger.Debugf("zk watcher [%s] new event: %v", path, evt)
 
 				if !StateAlive(evt.State) {
 					w.client.AppendDeadWatcher(w)

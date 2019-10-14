@@ -26,7 +26,7 @@ func isLocalZKAlive(t *testing.T) bool {
 
 		testClient = connectLocalZK(t)
 		if testClient == nil {
-			logger.Errorf("can't connect zookeeper")
+			logger.Errorf("zk can't connect")
 			return
 		}
 
@@ -34,7 +34,7 @@ func isLocalZKAlive(t *testing.T) bool {
 		if testClient.ConnAlive() {
 			atomic.StoreInt32(&localZKAlive, 1)
 		} else {
-			logger.Errorf("zookeeper not alive")
+			logger.Errorf("zk not alive")
 			testClient.Close()
 		}
 	})
@@ -47,7 +47,7 @@ func isLocalZKAlive(t *testing.T) bool {
 func connectLocalZK(_ *testing.T) *Client {
 	c, err := NewClient([]string{"127.0.0.1:2181"}, time.Second)
 	if err != nil {
-		logger.Errorf("can't connect zookeeper: %v", err)
+		logger.Errorf("zk can't connect: %v", err)
 		return nil
 	}
 

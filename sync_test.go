@@ -17,32 +17,39 @@ func TestClient_Sync(t *testing.T) {
 		return
 	}
 
+	path := "/test/s"
+
 	var test string
-	w, err := testClient.SyncWatchString("/test", &test, nil)
+	w, err := testClient.SyncWatchString(path, &test, nil)
 	assert.Nil(t, err)
 
 	time.Sleep(time.Second)
 
-	err = testClient.SetString("/test", "hello world")
+	err = testClient.SetString(path, "hello world")
 	assert.Nil(t, err)
 
 	time.Sleep(time.Second)
 
 	assert.Equal(t, "hello world", test)
 
-	err = testClient.SetString("/test", "hello")
+	err = testClient.SetString(path, "hello")
 	assert.Nil(t, err)
 
 	time.Sleep(time.Second)
 
 	assert.Equal(t, "hello", test)
 
-	err = testClient.SetString("/test", "")
+	err = testClient.SetString(path, "")
 	assert.Nil(t, err)
 
 	time.Sleep(time.Second)
 
 	assert.Equal(t, "", test)
+
+	err = testClient.Delete(path)
+	assert.Nil(t, err)
+
+	time.Sleep(time.Second)
 
 	w.Close()
 }
@@ -88,6 +95,11 @@ func TestClient_SyncJSON(t *testing.T) {
 
 	assert.Equal(t, "", u.Name)
 	assert.Equal(t, 0, u.Sex)
+
+	err = testClient.Delete(path)
+	assert.Nil(t, err)
+
+	time.Sleep(time.Second)
 
 	w.Close()
 }

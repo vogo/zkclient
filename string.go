@@ -11,8 +11,16 @@ type StringCodec struct {
 }
 
 func (c *StringCodec) Encode(obj interface{}) ([]byte, error) {
+	if obj == nil {
+		return nil, nil
+	}
+
 	if s, ok := obj.(string); ok {
 		return []byte(s), nil
+	}
+
+	if s, ok := obj.(*string); ok {
+		return []byte(*s), nil
 	}
 
 	return nil, errInvalidValue

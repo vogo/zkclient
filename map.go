@@ -139,7 +139,7 @@ func (h *MapHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error) 
 
 	for child := range oldChildren {
 		if _, ok := newChildren[child]; !ok {
-			logger.Infof("zk delete path: %s/%s", h.path, child)
+			logger.Infof("zk delete sub node [%s] of [%s]", child, h.path)
 			h.Delete(child)
 		}
 	}
@@ -171,7 +171,7 @@ func (h *MapHandler) syncWatchChild(w *Watcher, child string) {
 
 	if !h.syncChild {
 		if _, err := h.handleChild(w.client, childPath); err != nil {
-			logger.Errorf("load zk map child error: %v", err)
+			logger.Errorf("zk load map child error: %v", err)
 		}
 
 		return
@@ -189,7 +189,7 @@ func (h *MapHandler) handleChild(client *Client, childPath string) (<-chan zk.Ev
 		ch   <-chan zk.Event
 	)
 
-	logger.Debugf("read path --> %s", childPath)
+	logger.Debugf("zk read node [%s]", childPath)
 
 	if h.syncChild {
 		data, _, ch, err = client.Conn().GetW(childPath)
@@ -205,7 +205,7 @@ func (h *MapHandler) handleChild(client *Client, childPath string) (<-chan zk.Ev
 
 	if err = h.Decode(filepath.Base(childPath), data); err != nil {
 		if err != io.EOF {
-			logger.Warnf("failed to parse %s: %v", childPath, err)
+			logger.Warnf("zk failed to parse %s: %v", childPath, err)
 		}
 
 		return ch, nil
