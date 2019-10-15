@@ -17,7 +17,7 @@ func TestClient_SetTempRawValue(t *testing.T) {
 		return
 	}
 
-	path := "/test/temp_raw_value"
+	path := "/temp_raw_value"
 
 	c := connectLocalZK(t)
 
