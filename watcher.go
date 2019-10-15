@@ -20,13 +20,13 @@ type EventHandler interface {
 
 // ValueListener node watch listener
 type ValueListener interface {
-	Update(path string, obj interface{})
+	Update(path string, stat *zk.Stat, obj interface{})
 	Delete(path string)
 }
 
 // ChildListener child watch listener
 type ChildListener interface {
-	Update(path, child string, obj interface{})
+	Update(path, child string, stat *zk.Stat, obj interface{})
 	Delete(path, child string)
 }
 

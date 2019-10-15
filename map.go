@@ -92,7 +92,7 @@ func (h *mapHandler) Encode(key string) ([]byte, error) {
 	return h.codec.Encode(v.Interface())
 }
 
-func (h *mapHandler) Decode(key string, data []byte) error {
+func (h *mapHandler) Decode(stat *zk.Stat, key string, data []byte) error {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -107,7 +107,7 @@ func (h *mapHandler) Decode(key string, data []byte) error {
 
 	if h.listener != nil {
 		f := func() {
-			h.listener.Update(h.path, key, v.Interface())
+			h.listener.Update(h.path, key, stat, v.Interface())
 		}
 
 		if h.listenAsync {
@@ -229,23 +229,24 @@ func (h *mapHandler) handleChild(client *Client, childPath string) (<-chan zk.Ev
 		data []byte
 		err  error
 		ch   <-chan zk.Event
+		stat *zk.Stat
 	)
 
 	logger.Debugf("zk read node [%s]", childPath)
 
 	if h.syncChild {
-		data, _, ch, err = client.Conn().GetW(childPath)
+		data, stat, ch, err = client.Conn().GetW(childPath)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		data, _, err = client.Conn().Get(childPath)
+		data, stat, err = client.Conn().Get(childPath)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err = h.Decode(filepath.Base(childPath), data); err != nil {
+	if err = h.Decode(stat, filepath.Base(childPath), data); err != nil {
 		if err != io.EOF {
 			logger.Warnf("zk failed to parse %s: %v", childPath, err)
 		}

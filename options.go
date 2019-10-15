@@ -13,9 +13,9 @@ type ClientOptions struct {
 	alarmTrigger AlarmTrigger
 }
 
-func WithListenAsync() ClientOption {
+func WithListenAsync(async bool) ClientOption {
 	return func(o *ClientOptions) {
-		o.listenAsync = true
+		o.listenAsync = async
 	}
 }
 

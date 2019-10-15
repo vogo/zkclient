@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	zk2 "github.com/samuel/go-zookeeper/zk"
+
 	"github.com/vogo/logger"
 
 	"github.com/stretchr/testify/assert"
@@ -109,7 +111,7 @@ func TestClient_SyncJSON(t *testing.T) {
 type mListener struct {
 }
 
-func (l *mListener) Update(path, child string, obj interface{}) {
+func (l *mListener) Update(path, child string, stat *zk2.Stat, obj interface{}) {
 	logger.Infof("----- %s/%s: %v", path, child, obj)
 }
 func (l *mListener) Delete(path, child string) {

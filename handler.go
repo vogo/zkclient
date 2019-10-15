@@ -70,7 +70,7 @@ func (h *valueHandler) Encode() ([]byte, error) {
 	return h.codec.Encode(h.value.Interface())
 }
 
-func (h *valueHandler) Decode(data []byte) error {
+func (h *valueHandler) Decode(stat *zk.Stat, data []byte) error {
 	v, err := h.codec.Decode(data, h.typ)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (h *valueHandler) Decode(data []byte) error {
 
 	if h.listener != nil {
 		f := func() {
-			h.listener.Update(h.path, h.value.Interface())
+			h.listener.Update(h.path, stat, h.value.Interface())
 		}
 
 		if h.listenAsync {
@@ -120,7 +120,7 @@ func (h *valueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 		return nil, nil
 	}
 
-	data, _, wch, err := w.client.Conn().GetW(h.path)
+	data, stat, wch, err := w.client.Conn().GetW(h.path)
 	if err != nil {
 		if err == zk.ErrNoNode {
 			data, err = h.Encode()
@@ -145,7 +145,7 @@ func (h *valueHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, error
 		return wch, nil
 	}
 
-	if err := h.Decode(data); err != nil {
+	if err := h.Decode(stat, data); err != nil {
 		if err == io.EOF {
 			return wch, nil // ignore nil data
 		}
