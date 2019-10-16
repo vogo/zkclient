@@ -54,25 +54,32 @@ func NewClient(servers []string, options ...ClientOption) *Client {
 
 	_ = client.connect()
 
+	client.startConnMaintainer()
+
+	return client
+}
+
+// collectDeadWatchers start a goroutine to maintain the zk connection
+func (cli *Client) startConnMaintainer() {
 	go func() {
 		ticker := time.NewTicker(time.Second * 20)
-		select {
-		case <-client.done:
-			return
-		case <-ticker.C:
-			if !client.ConnAlive() && !client.Connecting() {
-				_ = client.Reconnect()
-			}
+		for {
+			select {
+			case <-cli.done:
+				return
+			case <-ticker.C:
+				if !cli.ConnAlive() && !cli.Connecting() {
+					_ = cli.Reconnect()
+				}
 
-			if client.ConnAlive() && len(client.deadWatchers) > 0 {
-				for _, watcher := range client.collectDeadWatchers() {
-					watcher.Watch()
+				if cli.ConnAlive() && len(cli.deadWatchers) > 0 {
+					for _, watcher := range cli.collectDeadWatchers() {
+						watcher.Watch()
+					}
 				}
 			}
 		}
 	}()
-
-	return client
 }
 
 // collectDeadWatchers return queued watchers, and empty the queue
@@ -180,7 +187,7 @@ func (cli *Client) EnsurePath(path string) error {
 
 // Delete path
 func (cli *Client) Delete(path string) error {
-	logger.Infof("zk delete node [%s]", path)
+	logger.Debugf("zk delete node [%s]", path)
 
 	if err := cli.conn.Delete(path, -1); err != nil && err != zk.ErrNoNode {
 		return err

@@ -2,7 +2,8 @@
 // author: wongoo
 // since: 2018/12/27
 
-// zkclient is a client of zookeeper
+// `zkclient` is a encapsulation utility of zookeeper based on [go-zookeeper](github.com/samuel/go-zookeeper),
+// supports the following features:
 //
 // ## Features:
 // - auto reconnect
