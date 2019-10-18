@@ -1,4 +1,4 @@
-// Copyright 2019 The vogo Authors. All rights reserved.
+// Copyright 2018-2019 The vogo Authors. All rights reserved.
 // author: wongoo
 // since: 2019/10/07
 //

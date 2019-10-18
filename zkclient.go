@@ -1,4 +1,4 @@
-// Copyright 2019 The vogo Authors. All rights reserved.
+// Copyright 2018-2019 The vogo Authors. All rights reserved.
 // author: wongoo
 // since: 2018/12/3
 //
@@ -21,8 +21,8 @@ type AlarmTrigger func(err error)
 
 // Client for zookeeper
 type Client struct {
+	sync.Mutex
 	ClientOptions
-	lock         sync.Mutex
 	servers      []string
 	conn         *zk.Conn
 	done         chan struct{}
@@ -84,8 +84,8 @@ func (cli *Client) startConnMaintainer() {
 
 // collectDeadWatchers return queued watchers, and empty the queue
 func (cli *Client) collectDeadWatchers() []*Watcher {
-	cli.lock.Lock()
-	defer cli.lock.Unlock()
+	cli.Lock()
+	defer cli.Unlock()
 
 	watchers := cli.deadWatchers
 	cli.deadWatchers = []*Watcher{}
@@ -95,8 +95,8 @@ func (cli *Client) collectDeadWatchers() []*Watcher {
 
 // AppendDeadWatcher add dead watcher, wait to watch again
 func (cli *Client) AppendDeadWatcher(watcher *Watcher) {
-	cli.lock.Lock()
-	defer cli.lock.Unlock()
+	cli.Lock()
+	defer cli.Unlock()
 
 	logger.Debugf("zk watcher append to dead queue: %s", watcher.handler.Path())
 	watcher.client = cli
@@ -128,7 +128,19 @@ func (cli *Client) connect() error {
 
 // Close client, NOT use Client which already calling Close()
 func (cli *Client) Close() {
-	close(cli.done)
+	cli.Lock()
+	defer cli.Unlock()
+
+	select {
+	case <-cli.done:
+	default:
+		close(cli.done)
+	}
+
+	// notify dead watchers
+	for _, watcher := range cli.deadWatchers {
+		watcher.Close()
+	}
 
 	if cli.ConnAlive() {
 		cli.conn.Close()

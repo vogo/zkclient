@@ -1,4 +1,4 @@
-// Copyright 2019 The vogo Authors. All rights reserved.
+// Copyright 2018-2019 The vogo Authors. All rights reserved.
 // author: wongoo
 // since: 2018/12/21
 //
@@ -7,6 +7,8 @@ package zkclient
 
 import (
 	"errors"
+	"sync"
+	"sync/atomic"
 
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/vogo/logger"
@@ -32,9 +34,11 @@ type ChildListener interface {
 
 // Watcher zookeeper watcher
 type Watcher struct {
+	sync.Mutex
 	client  *Client
 	handler EventHandler
 	done    chan struct{}
+	alive   int32
 }
 
 // NewWatcher create new watcher
@@ -47,12 +51,30 @@ func (cli *Client) NewWatcher(handler EventHandler) (*Watcher, error) {
 		client:  cli,
 		handler: handler,
 		done:    make(chan struct{}),
+		alive:   0,
 	}, nil
+}
+
+// Done chan
+func (w *Watcher) Done() <-chan struct{} {
+	return w.done
+}
+
+// Alive whether watcher is watching
+func (w *Watcher) Alive() bool {
+	return atomic.LoadInt32(&w.alive) == 1
 }
 
 // Close close watch event
 func (w *Watcher) Close() {
-	close(w.done)
+	w.Lock()
+	defer w.Unlock()
+
+	select {
+	case <-w.done:
+	default:
+		close(w.done)
+	}
 }
 
 // Watch start watch event
@@ -60,6 +82,9 @@ func (w *Watcher) Watch() {
 	go func() {
 		path := w.handler.Path()
 		logger.Debugf("zk watcher [%s] start", path)
+
+		atomic.StoreInt32(&w.alive, 1)
+		defer atomic.StoreInt32(&w.alive, 0)
 
 		var (
 			evt *zk.Event
@@ -89,6 +114,7 @@ func (w *Watcher) Watch() {
 			select {
 			case <-w.client.done:
 				logger.Debugf("zk watcher [%s] exit for client closed", path)
+				w.Close()
 				return
 			case <-w.done:
 				logger.Debugf("zk watcher [%s] exit for watcher closed", path)
