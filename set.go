@@ -22,7 +22,7 @@ func (cli *Client) SetValue(path string, obj interface{}, codec Codec) error {
 
 // SetRawValue set raw value in zookeeper
 func (cli *Client) SetRawValue(path string, bytes []byte) error {
-	logger.Debugf("zk set node [%s]: %s", path, string(bytes))
+	logger.Debugf("zk set node [%s]", path)
 
 	if err := cli.EnsurePath(path); err != nil {
 		return err
