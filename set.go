@@ -42,7 +42,7 @@ func (cli *Client) SetString(path, s string) error {
 
 // SetJSON in zookeeper
 func (cli *Client) SetJSON(path string, obj interface{}) error {
-	return cli.SetValue(path, obj, jsonCodec)
+	return cli.SetValue(path, obj, jsonEncodeCodec)
 }
 
 // SetMapValue set map value in zookeeper
@@ -64,7 +64,7 @@ func (cli *Client) SetMapStringValue(path, key, s string) error {
 
 // SetMapJSONValue in zookeeper
 func (cli *Client) SetMapJSONValue(path, key string, obj interface{}) error {
-	return cli.SetMapValue(path, key, obj, jsonCodec)
+	return cli.SetMapValue(path, key, obj, jsonEncodeCodec)
 }
 
 // CreateTempRawValue create temp raw value in zookeeper
@@ -106,5 +106,5 @@ func (cli *Client) SetTempValue(path string, obj interface{}, codec Codec) error
 
 // SetTempJSON in zookeeper
 func (cli *Client) SetTempJSON(path string, obj interface{}) error {
-	return cli.SetTempValue(path, obj, jsonCodec)
+	return cli.SetTempValue(path, obj, jsonEncodeCodec)
 }

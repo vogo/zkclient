@@ -17,7 +17,6 @@ import (
 type valueHandler struct {
 	path        string
 	value       reflect.Value
-	typ         reflect.Type
 	codec       Codec
 	listenAsync bool
 	listener    ValueListener
@@ -47,9 +46,13 @@ func (cli *Client) newValueHandler(path string, obj interface{}, codec Codec,
 		return nil, errors.New("listener required when watch only")
 	}
 
+	// set json value type
+	if jsonCodec, ok := codec.(*JSONCodec); ok {
+		jsonCodec.typ = typ.Elem()
+	}
+
 	handler := &valueHandler{
 		path:        path,
-		typ:         typ,
 		codec:       codec,
 		listenAsync: cli.listenAsync,
 		listener:    listener,
@@ -71,13 +74,13 @@ func (h *valueHandler) Encode() ([]byte, error) {
 }
 
 func (h *valueHandler) Decode(stat *zk.Stat, data []byte) error {
-	v, err := h.codec.Decode(data, h.typ)
+	v, err := h.codec.Decode(data)
 	if err != nil {
 		return err
 	}
 
 	if h.value != nilValue {
-		h.value.Elem().Set(v.Elem())
+		h.value.Elem().Set(reflect.ValueOf(v).Elem())
 	}
 
 	if h.listener != nil {

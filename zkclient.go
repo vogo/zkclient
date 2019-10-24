@@ -103,9 +103,11 @@ func (cli *Client) AppendDeadWatcher(watcher *Watcher) {
 	cli.deadWatchers = append(cli.deadWatchers, watcher)
 }
 
+// zkLogger logger for zookeeper
 type zkLogger struct {
 }
 
+// Printf only write log when debug level enabled
 func (l *zkLogger) Printf(format string, a ...interface{}) {
 	if logger.Level < logger.LevelDebug {
 		return

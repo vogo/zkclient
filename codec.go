@@ -5,12 +5,11 @@
 
 package zkclient
 
-import (
-	"reflect"
-)
-
 // Codec for data
 type Codec interface {
+	// Encode object to byte, which must be a pointer
 	Encode(obj interface{}) ([]byte, error)
-	Decode(data []byte, typ reflect.Type) (reflect.Value, error)
+
+	// Decode byte data to object, which must be a pointer
+	Decode(data []byte) (interface{}, error)
 }

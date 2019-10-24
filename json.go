@@ -12,7 +12,9 @@ import (
 )
 
 // JSONCodec struct
-type JSONCodec struct{}
+type JSONCodec struct {
+	typ reflect.Type
+}
 
 // Encode zk json encode
 func (c *JSONCodec) Encode(obj interface{}) ([]byte, error) {
@@ -20,8 +22,8 @@ func (c *JSONCodec) Encode(obj interface{}) ([]byte, error) {
 }
 
 // Decode zk json decode
-func (c *JSONCodec) Decode(data []byte, typ reflect.Type) (reflect.Value, error) {
-	value := reflect.New(typ)
+func (c *JSONCodec) Decode(data []byte) (interface{}, error) {
+	value := reflect.New(c.typ)
 
 	if len(data) == 0 {
 		return value.Elem(), io.EOF
@@ -33,7 +35,9 @@ func (c *JSONCodec) Decode(data []byte, typ reflect.Type) (reflect.Value, error)
 		return value, err
 	}
 
-	return value.Elem(), nil
+	return value.Interface(), nil
 }
 
-var jsonCodec = &JSONCodec{}
+var (
+	jsonEncodeCodec = &JSONCodec{}
+)

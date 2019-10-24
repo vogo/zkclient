@@ -44,7 +44,7 @@ func (cli *Client) createWatcher(handler EventHandler) (*Watcher, error) {
 
 // SyncWatchJSON synchronize json value of the path to obj, and trigger listener when value change
 func (cli *Client) SyncWatchJSON(path string, obj interface{}, listener ValueListener) (*Watcher, error) {
-	return cli.SyncWatch(path, obj, jsonCodec, listener)
+	return cli.SyncWatch(path, obj, &JSONCodec{}, listener)
 }
 
 // SyncWatchJSON synchronize string value of the path to obj, and trigger listener when value change
@@ -54,7 +54,7 @@ func (cli *Client) SyncWatchString(path string, s *string, listener ValueListene
 
 // WatchJSON watch json value of the path to obj, and trigger listener when value change
 func (cli *Client) WatchJSON(path string, obj interface{}, listener ValueListener) (*Watcher, error) {
-	return cli.Watch(path, obj, jsonCodec, listener)
+	return cli.Watch(path, obj, &JSONCodec{}, listener)
 }
 
 // WatchJSON watch string value of the path to obj, and trigger listener when value change
@@ -89,7 +89,7 @@ func (cli *Client) WatchMap(path string, m interface{}, valueCodec Codec, syncCh
 
 // SyncWatchJSONMap synchronize sub-path json value into a map, and trigger listener when child value change
 func (cli *Client) SyncWatchJSONMap(path string, m interface{}, syncChild bool, listener ChildListener) (*Watcher, error) {
-	return cli.SyncWatchMap(path, m, jsonCodec, syncChild, listener)
+	return cli.SyncWatchMap(path, m, &JSONCodec{}, syncChild, listener)
 }
 
 // SyncWatchStringMap synchronize sub-path string value into a map, and trigger listener when child value change
@@ -99,7 +99,7 @@ func (cli *Client) SyncWatchStringMap(path string, m map[string]string, syncChil
 
 // WatchJSONMap watch sub-path json value into a map, and trigger listener when child value change
 func (cli *Client) WatchJSONMap(path string, m interface{}, syncChild bool, listener ChildListener) (*Watcher, error) {
-	return cli.WatchMap(path, m, jsonCodec, syncChild, listener)
+	return cli.WatchMap(path, m, &JSONCodec{}, syncChild, listener)
 }
 
 // WatchStringMap watch sub-path string value into a map, and trigger listener when child value change

@@ -5,8 +5,6 @@
 
 package zkclient
 
-import "reflect"
-
 type StringCodec struct {
 }
 
@@ -26,9 +24,9 @@ func (c *StringCodec) Encode(obj interface{}) ([]byte, error) {
 	return nil, errInvalidValue
 }
 
-func (c *StringCodec) Decode(data []byte, typ reflect.Type) (reflect.Value, error) {
+func (c *StringCodec) Decode(data []byte) (interface{}, error) {
 	s := string(data)
-	return reflect.ValueOf(&s), nil
+	return &s, nil
 }
 
 var (

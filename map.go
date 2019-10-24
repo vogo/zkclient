@@ -20,7 +20,6 @@ type mapHandler struct {
 	path        string
 	lock        sync.Mutex
 	value       reflect.Value
-	typ         reflect.Type
 	codec       Codec
 	syncChild   bool
 	listenAsync bool
@@ -61,9 +60,13 @@ func (cli *Client) newMapHandler(path string, obj interface{}, syncChild bool, c
 		return nil, errors.New("listener required when watch only")
 	}
 
+	// set json value type
+	if jsonCodec, ok := codec.(*JSONCodec); ok {
+		jsonCodec.typ = valueTyp.Elem()
+	}
+
 	handler := &mapHandler{
 		path:        path,
-		typ:         valueTyp,
 		syncChild:   syncChild,
 		codec:       codec,
 		lock:        sync.Mutex{},
@@ -96,18 +99,18 @@ func (h *mapHandler) Decode(stat *zk.Stat, key string, data []byte) error {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	v, err := h.codec.Decode(data, h.typ)
+	v, err := h.codec.Decode(data)
 	if err != nil {
 		return err
 	}
 
 	if h.value != nilValue {
-		h.value.SetMapIndex(reflect.ValueOf(key), v)
+		h.value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(v))
 	}
 
 	if h.listener != nil {
 		f := func() {
-			h.listener.Update(h.path, key, stat, v.Interface())
+			h.listener.Update(h.path, key, stat, v)
 		}
 
 		if h.listenAsync {
