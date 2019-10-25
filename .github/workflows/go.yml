@@ -14,6 +14,8 @@ jobs:
 
     - name: Set up ENV and Tools
       run: |
+        mkdir -p ~/go/bin
+        export GOPATH=~/go
         export GOBIN=$GOPATH/bin
         export PATH=$PATH:$GOBIN
         export GO111MODULE=on
