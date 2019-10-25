@@ -4,8 +4,24 @@ jobs:
 
   build:
     name: Build
-    runs-on: golang:buster
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+      GOBIN: $GOPATH/bin
+      PATH: $PATH:$GOBIN
     steps:
+
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Set up tools
+      run: go get -u golang.org/x/tools/...  && go get -u github.com/golangci/golangci-lint/...
+
+    - name: Show env
+      run: env
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
