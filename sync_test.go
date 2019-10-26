@@ -7,7 +7,6 @@ package zkclient
 
 import (
 	"testing"
-	"time"
 
 	zk2 "github.com/samuel/go-zookeeper/zk"
 
@@ -27,33 +26,33 @@ func TestClient_Sync(t *testing.T) {
 	w, err := testClient.SyncWatchString(path, &test, nil)
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	err = testClient.SetString(path, "hello world")
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, "hello world", test)
 
 	err = testClient.SetString(path, "hello")
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, "hello", test)
 
 	err = testClient.SetString(path, "")
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, "", test)
 
 	err = testClient.Delete(path)
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	w.Close()
 }
@@ -74,12 +73,12 @@ func TestClient_SyncJSON(t *testing.T) {
 	w, err := testClient.SyncWatchJSON(path, u, nil)
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	err = testClient.SetRawValue(path, []byte(`{"name":"wongoo", "sex":1}`))
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, "wongoo", u.Name)
 	assert.Equal(t, 1, u.Sex)
@@ -87,7 +86,7 @@ func TestClient_SyncJSON(t *testing.T) {
 	err = testClient.SetRawValue(path, []byte(`{"name":"jack", "sex":0}`))
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, "jack", u.Name)
 	assert.Equal(t, 0, u.Sex)
@@ -95,7 +94,7 @@ func TestClient_SyncJSON(t *testing.T) {
 	err = testClient.SetRawValue(path, []byte("{}"))
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, "", u.Name)
 	assert.Equal(t, 0, u.Sex)
@@ -103,7 +102,7 @@ func TestClient_SyncJSON(t *testing.T) {
 	err = testClient.Delete(path)
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	w.Close()
 }
@@ -128,12 +127,12 @@ func TestClient_SyncJSONMap(t *testing.T) {
 	w, err := testClient.SyncWatchJSONMap(path, users, true, &mListener{})
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	err = testClient.SetMapJSONValue(path, "u1", &user{Name: "wongoo", Sex: 1})
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, 1, len(users))
 	assert.Equal(t, "wongoo", users["u1"].Name)
@@ -142,7 +141,7 @@ func TestClient_SyncJSONMap(t *testing.T) {
 	err = testClient.SetMapJSONValue(path, "u1", &user{Name: "yang", Sex: 0})
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, 1, len(users))
 	assert.Equal(t, "yang", users["u1"].Name)
@@ -151,7 +150,7 @@ func TestClient_SyncJSONMap(t *testing.T) {
 	err = testClient.SetMapJSONValue(path, "u2", &user{Name: "jack", Sex: 0})
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, 2, len(users))
 	assert.Equal(t, "jack", users["u2"].Name)
@@ -160,14 +159,14 @@ func TestClient_SyncJSONMap(t *testing.T) {
 	err = testClient.Delete(path + "/u1")
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, 1, len(users))
 
 	err = testClient.Delete(path + "/u2")
 	assert.Nil(t, err)
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	assert.Equal(t, 0, len(users))
 

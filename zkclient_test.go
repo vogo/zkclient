@@ -53,3 +53,7 @@ func connectLocalZK(_ *testing.T) *Client {
 
 	return c
 }
+
+func waitEventWatch() {
+	time.Sleep(time.Second * 2)
+}

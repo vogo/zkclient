@@ -7,7 +7,6 @@ package zkclient
 import (
 	"errors"
 	"testing"
-	"time"
 )
 
 func TestWatcherClose(t *testing.T) {
@@ -16,7 +15,7 @@ func TestWatcherClose(t *testing.T) {
 		return
 	}
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	c1.Close()
 	w.Close()
@@ -26,7 +25,7 @@ func TestWatcherClose(t *testing.T) {
 		return
 	}
 
-	time.Sleep(time.Second)
+	waitEventWatch()
 
 	w.Close()
 	c1.Close()
