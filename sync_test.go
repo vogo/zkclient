@@ -107,6 +107,30 @@ func TestClient_SyncJSON(t *testing.T) {
 	w.Close()
 }
 
+func TestClient_SyncJSON_MapObject(t *testing.T) {
+	if !isLocalZKAlive(t) {
+		return
+	}
+
+	m := make(map[string]interface{})
+	path := "/test/user_map"
+
+	w, err := testClient.SyncWatchJSON(path, &m, nil)
+	assert.Nil(t, err)
+
+	waitEventWatch()
+
+	err = testClient.SetRawValue(path, []byte(`{"name":"wongoo", "sex":1}`))
+	assert.Nil(t, err)
+
+	waitEventWatch()
+
+	assert.Equal(t, "wongoo", m["name"])
+	assert.Equal(t, float64(1), m["sex"])
+
+	w.Close()
+}
+
 type mListener struct {
 }
 
