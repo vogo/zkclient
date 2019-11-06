@@ -5,7 +5,11 @@
 
 package zkclient
 
-import "github.com/samuel/go-zookeeper/zk"
+import (
+	"strings"
+
+	"github.com/samuel/go-zookeeper/zk"
+)
 
 // StateAlive whether zk state alive
 func StateAlive(state zk.State) bool {
@@ -33,4 +37,12 @@ func IsZKRecoverableErr(err error) bool {
 	default:
 		return false
 	}
+}
+
+func ParentNode(path string) string {
+	idx := strings.LastIndex(path, "/")
+	if idx > 0 {
+		return path[:idx]
+	}
+	return ""
 }
