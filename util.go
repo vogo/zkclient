@@ -44,5 +44,6 @@ func ParentNode(path string) string {
 	if idx > 0 {
 		return path[:idx]
 	}
+
 	return ""
 }
