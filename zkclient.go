@@ -8,7 +8,6 @@ package zkclient
 import (
 	"fmt"
 	"net"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -185,7 +184,7 @@ func (cli *Client) EnsurePath(path string) error {
 			}
 
 			// create parent
-			if err := cli.EnsurePath(filepath.Dir(path)); err != nil {
+			if err := cli.EnsurePath(ParentNode(path)); err != nil {
 				return err
 			}
 
