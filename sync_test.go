@@ -180,14 +180,14 @@ func TestClient_SyncJSONMap(t *testing.T) {
 	assert.Equal(t, "jack", users["u2"].Name)
 	assert.Equal(t, 0, users["u2"].Sex)
 
-	err = testClient.Delete(path + "/u1")
+	err = testClient.Delete(PathJoin(path, "u1"))
 	assert.Nil(t, err)
 
 	waitEventWatch()
 
 	assert.Equal(t, 1, len(users))
 
-	err = testClient.Delete(path + "/u2")
+	err = testClient.Delete(PathJoin(path, "u2"))
 	assert.Nil(t, err)
 
 	waitEventWatch()

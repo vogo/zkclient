@@ -123,13 +123,13 @@ func syncMap(client *zkclient.Client) error {
 	time.Sleep(time.Second)
 	logger.Infof("users after set u2: %v", users)
 
-	if err := client.Delete(path + "/u1"); err != nil {
+	if err := client.Delete(zkclient.PathJoin(path, "u1")); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)
 	logger.Infof("users after delete u1: %v", users)
 
-	if err := client.Delete(path + "/u2"); err != nil {
+	if err := client.Delete(zkclient.PathJoin(path, "u2")); err != nil {
 		return err
 	}
 	time.Sleep(time.Second)

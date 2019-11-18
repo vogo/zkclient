@@ -45,7 +45,7 @@ func TestClient_SetMapStringValue(t *testing.T) {
 	err := testClient.SetMapStringValue(path, "c1", "hello")
 	assert.Nil(t, err)
 
-	childPath := path + "/c1"
+	childPath := PathJoin(path, "c1")
 	data, err := testClient.GetString(childPath)
 	assert.Nil(t, err)
 	assert.Equal(t, "hello", data)

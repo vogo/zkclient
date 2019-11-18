@@ -47,7 +47,7 @@ func (cli *Client) SetJSON(path string, obj interface{}) error {
 
 // SetMapValue set map value in zookeeper
 func (cli *Client) SetMapValue(path, key string, obj interface{}, codec Codec) error {
-	childPath := path + "/" + key
+	childPath := PathJoin(path, key)
 	bytes, err := codec.Encode(obj)
 
 	if err != nil {
@@ -59,7 +59,7 @@ func (cli *Client) SetMapValue(path, key string, obj interface{}, codec Codec) e
 
 // SetMapStringValue in zookeeper
 func (cli *Client) SetMapStringValue(path, key, s string) error {
-	return cli.SetRawValue(path+"/"+key, []byte(s))
+	return cli.SetRawValue(PathJoin(path, key), []byte(s))
 }
 
 // SetMapJSONValue in zookeeper

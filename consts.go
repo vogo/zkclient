@@ -12,6 +12,8 @@ import (
 
 const (
 	defaultTimeout = time.Second * 5
+
+	PathSplit = "/"
 )
 
 var (

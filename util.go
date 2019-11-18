@@ -40,10 +40,14 @@ func IsZKRecoverableErr(err error) bool {
 }
 
 func ParentNode(path string) string {
-	idx := strings.LastIndex(path, "/")
+	idx := strings.LastIndex(path, PathSplit)
 	if idx > 0 {
 		return path[:idx]
 	}
 
 	return ""
+}
+
+func PathJoin(nodes ...string) string {
+	return strings.Join(nodes, PathSplit)
 }

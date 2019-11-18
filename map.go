@@ -212,7 +212,7 @@ func (ch *childHandler) Handle(w *Watcher, evt *zk.Event) (<-chan zk.Event, erro
 }
 
 func (h *mapHandler) syncWatchChild(w *Watcher, child string) {
-	childPath := h.path + "/" + child
+	childPath := PathJoin(h.path, child)
 
 	if !h.syncChild {
 		if _, err := h.handleChild(w.client, childPath); err != nil {
