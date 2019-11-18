@@ -62,6 +62,7 @@ func NewClient(servers []string, options ...ClientOption) *Client {
 func (cli *Client) startConnMaintainer() {
 	go func() {
 		ticker := time.NewTicker(time.Second * 20)
+
 		for {
 			select {
 			case <-cli.done:

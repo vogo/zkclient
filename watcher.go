@@ -115,6 +115,7 @@ func (w *Watcher) Watch() {
 			case <-w.client.done:
 				logger.Debugf("zk watcher [%s] exit for client closed", path)
 				w.Close()
+
 				return
 			case <-w.done:
 				logger.Debugf("zk watcher [%s] exit for watcher closed", path)
