@@ -126,7 +126,8 @@ func TestClient_SyncJSON_MapObject(t *testing.T) {
 	waitEventWatch()
 
 	assert.Equal(t, "wongoo", m["name"])
-	assert.Equal(t, float64(1), m["sex"])
+
+	assert.Equal(t, 1, int(m["sex"].(float64)))
 
 	w.Close()
 }
@@ -153,14 +154,15 @@ func TestClient_SyncJSONMap(t *testing.T) {
 
 	waitEventWatch()
 
-	err = testClient.SetMapJSONValue(path, "u1", &user{Name: "wongoo", Sex: 1})
+	sex := 1
+	err = testClient.SetMapJSONValue(path, "u1", &user{Name: "wongoo", Sex: sex})
 	assert.Nil(t, err)
 
 	waitEventWatch()
 
 	assert.Equal(t, 1, len(users))
 	assert.Equal(t, "wongoo", users["u1"].Name)
-	assert.Equal(t, 1, users["u1"].Sex)
+	assert.Equal(t, sex, users["u1"].Sex)
 
 	err = testClient.SetMapJSONValue(path, "u1", &user{Name: "yang", Sex: 0})
 	assert.Nil(t, err)

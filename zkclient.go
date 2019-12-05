@@ -15,6 +15,10 @@ import (
 	"github.com/vogo/logger"
 )
 
+const (
+	connCheckInterval = time.Second * 20
+)
+
 // AlarmTrigger alarm function
 type AlarmTrigger func(err error)
 
@@ -61,7 +65,7 @@ func NewClient(servers []string, options ...ClientOption) *Client {
 // collectDeadWatchers start a goroutine to maintain the zk connection
 func (cli *Client) startConnMaintainer() {
 	go func() {
-		ticker := time.NewTicker(time.Second * 20)
+		ticker := time.NewTicker(connCheckInterval)
 
 		for {
 			select {

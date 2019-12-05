@@ -70,6 +70,10 @@ func (w *Watcher) Close() {
 	w.Lock()
 	defer w.Unlock()
 
+	defer func() {
+		_ = recover()
+	}()
+
 	select {
 	case <-w.done:
 	default:
