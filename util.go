@@ -32,7 +32,7 @@ func IsZKInvalidErr(err error) bool {
 
 func IsZKRecoverableErr(err error) bool {
 	switch err {
-	case zk.ErrClosing, zk.ErrConnectionClosed, zk.ErrSessionExpired, zk.ErrSessionMoved:
+	case zk.ErrClosing, zk.ErrConnectionClosed, zk.ErrSessionExpired, zk.ErrSessionMoved, zk.ErrNoServer:
 		return true
 	default:
 		return false
