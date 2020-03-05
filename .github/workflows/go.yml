@@ -16,7 +16,7 @@ jobs:
       run: |
         mkdir ~/zk
         cd ~/zk
-        curl -O https://www.apache.org/dist/zookeeper/zookeeper-3.5.6/apache-zookeeper-3.5.6-bin.tar.gz
+        curl -O https://downloads.apache.org/zookeeper/zookeeper-3.5.6/apache-zookeeper-3.5.6-bin.tar.gz
         tar -xf apache-zookeeper-3.5.6-bin.tar.gz
         cd apache-zookeeper-3.5.6-bin
         cp conf/zoo_sample.cfg conf/zoo.cfg
